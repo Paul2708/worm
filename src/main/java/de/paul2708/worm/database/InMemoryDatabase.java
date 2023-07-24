@@ -2,10 +2,7 @@ package de.paul2708.worm.database;
 
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.PrimaryKeyAttribute;
-import de.paul2708.worm.repository.actions.DatabaseAction;
-import de.paul2708.worm.repository.actions.FindAllAction;
-import de.paul2708.worm.repository.actions.MethodInformation;
-import de.paul2708.worm.repository.actions.SaveAction;
+import de.paul2708.worm.repository.actions.*;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -47,6 +44,8 @@ public class InMemoryDatabase implements Database {
             MethodInformation methodInformation = action.getMethodInformation();
 
             return database.values();
+        } else if (action instanceof FindByIdAction) {
+            return Optional.ofNullable(database.get(action.getMethodInformation().args()[0]));
         }
 
         throw new IllegalArgumentException("No action matches");

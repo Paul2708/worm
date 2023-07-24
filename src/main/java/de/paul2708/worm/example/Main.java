@@ -16,5 +16,8 @@ public class Main {
         System.out.println(person);
 
         System.out.println(repository.findAll());
+
+        System.out.println(repository.findById(0));
+        System.out.println(repository.findById(person.getId()));
     }
 }

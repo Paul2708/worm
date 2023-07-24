@@ -1,12 +1,13 @@
 package de.paul2708.worm.repository;
 
 import java.util.Collection;
+import java.util.Optional;
 
 public interface CrudRepository<T, K> {
 
     Collection<T> findAll();
 
-    T findById(K key);
+    Optional<T> findById(K key);
 
     void delete(T entity);
 
