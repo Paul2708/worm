@@ -1,6 +1,7 @@
 package de.paul2708.worm.repository;
 
 import de.paul2708.worm.database.Database;
+import de.paul2708.worm.database.DatabaseActionProcessor;
 import de.paul2708.worm.repository.actions.*;
 
 import java.lang.reflect.InvocationHandler;
@@ -10,11 +11,12 @@ import java.util.List;
 public class RepositoryInvocationHandler implements InvocationHandler {
 
     private final Class<?> repositoryClass;
-    private final Database database;
+    private final DatabaseActionProcessor processor;
 
     public RepositoryInvocationHandler(Class<?> repositoryClass, Database database) {
         this.repositoryClass = repositoryClass;
-        this.database = database;
+
+        this.processor = new DatabaseActionProcessor(database);
     }
 
     @Override
@@ -28,7 +30,7 @@ public class RepositoryInvocationHandler implements InvocationHandler {
 
         for (DatabaseAction action : actions) {
             if (action.matches(method, args)) {
-                return database.process(action);
+                return processor.process(action);
             }
         }
 
