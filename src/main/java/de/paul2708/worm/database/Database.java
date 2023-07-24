@@ -5,6 +5,8 @@ import java.util.Optional;
 
 public interface Database {
 
+    void connect();
+
     Object save(Object key, Object entity);
 
     Collection<Object> findAll();

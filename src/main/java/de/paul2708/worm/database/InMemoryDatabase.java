@@ -11,6 +11,11 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
+    public void connect() {
+        System.out.println("Create local in-memory database.");
+    }
+
+    @Override
     public Object save(Object key, Object entity) {
         database.put(key, entity);
 
