@@ -46,6 +46,28 @@ public class InMemoryDatabase implements Database {
             return database.values();
         } else if (action instanceof FindByIdAction) {
             return Optional.ofNullable(database.get(action.getMethodInformation().args()[0]));
+        } else if (action instanceof DeleteAction) {
+            Object targetEntity = action.getMethodInformation().args()[0];
+            AttributeResolver resolver = new AttributeResolver(targetEntity);
+            PrimaryKeyAttribute primaryKey = resolver.getPrimaryKey();
+
+            Object id;
+
+            try {
+                Field field = targetEntity.getClass().getDeclaredField(primaryKey.fieldName());
+                field.setAccessible(true);
+                id = field.get(targetEntity);
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                throw new RuntimeException(e);
+            }
+
+            if (id == null) {
+                throw new IllegalArgumentException("Cannot access primary key");
+            }
+
+            database.remove(id);
+
+            return null;
         }
 
         throw new IllegalArgumentException("No action matches");

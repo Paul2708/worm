@@ -19,5 +19,9 @@ public class Main {
 
         System.out.println(repository.findById(0));
         System.out.println(repository.findById(person.getId()));
+
+        repository.delete(person);
+
+        System.out.println(repository.findAll());
     }
 }
