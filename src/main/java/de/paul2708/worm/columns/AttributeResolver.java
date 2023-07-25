@@ -1,17 +1,27 @@
 package de.paul2708.worm.columns;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AttributeResolver {
 
-    public final Object object;
+    public final Class<?> clazz;
 
     public AttributeResolver(Object object) {
-        this.object = object;
+        this.clazz = object.getClass();
+    }
+
+    public AttributeResolver(Class<?> clazz) {
+        this.clazz = clazz;
+    }
+
+    public String getTable() {
+        return clazz.getAnnotation(Table.class).value();
     }
 
     public PrimaryKeyAttribute getPrimaryKey() {
-        for (Field field : object.getClass().getDeclaredFields()) {
+        for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(PrimaryKey.class)) {
                 String column = field.getAnnotation(PrimaryKey.class).value();
 
@@ -21,5 +31,19 @@ public class AttributeResolver {
         }
 
         return null;
+    }
+
+    public List<ColumnAttribute> getColumnsWithoutPrimaryKey() {
+        List<ColumnAttribute> columns = new ArrayList<>();
+
+        for (Field field : clazz.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Column.class) && !field.isAnnotationPresent(PrimaryKey.class)) {
+                String column = field.getAnnotation(Column.class).value();
+
+                columns.add(new ColumnAttribute(column, field.getType()));
+            }
+        }
+
+        return columns;
     }
 }

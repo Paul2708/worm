@@ -7,6 +7,7 @@ public interface Database {
 
     void connect();
 
+    // TODO: Replace entityClass with attribute resolver
     void prepare(Class<?> entityClass);
 
     Object save(Object key, Object entity);

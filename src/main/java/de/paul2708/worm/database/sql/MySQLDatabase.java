@@ -2,6 +2,8 @@ package de.paul2708.worm.database.sql;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import de.paul2708.worm.columns.AttributeResolver;
+import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.columns.Table;
 import de.paul2708.worm.database.Database;
 
@@ -52,6 +54,13 @@ public class MySQLDatabase implements Database {
 
     @Override
     public void prepare(Class<?> entityClass) {
+        AttributeResolver resolver = new AttributeResolver(entityClass);
+        for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
+            System.out.println(column + ": " + column.type().getName());
+        }
+
+        // TODO: Build create table statement
+
         System.out.printf("Create table %s%n", entityClass.getAnnotation(Table.class).value());
     }
 
