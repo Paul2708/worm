@@ -1,8 +1,10 @@
 package de.paul2708.worm.columns;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AttributeResolver {
 
@@ -45,9 +47,9 @@ public class AttributeResolver {
                 ColumnAttribute columnAttribute;
                 if (field.getType().equals(String.class)) {
                     int maxLength = field.isAnnotationPresent(MaxLength.class) ? field.getAnnotation(MaxLength.class).value() : -1;
-                    columnAttribute = new StringColumnAttribute(column, maxLength);
+                    columnAttribute = new StringColumnAttribute(column, field.getName(), maxLength);
                 } else {
-                    columnAttribute = new ColumnAttribute(column, field.getType());
+                    columnAttribute = new ColumnAttribute(column, field.getName(), field.getType());
                 }
 
                 columns.add(columnAttribute);
@@ -82,5 +84,23 @@ public class AttributeResolver {
         }
 
         return null;
+    }
+
+    public Object createInstance(Map<String, Object> fieldValues) {
+        try {
+            Object object = clazz.getConstructor().newInstance();
+
+            for (Map.Entry<String, Object> entry : fieldValues.entrySet()) {
+                Field field = clazz.getDeclaredField(entry.getKey());
+                field.setAccessible(true);
+
+                field.set(object, entry.getValue());
+            }
+
+            return object;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException |
+                 NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -5,10 +5,12 @@ import java.util.Objects;
 public class ColumnAttribute {
 
     private final String columnName;
+    private final String fieldName;
     private final Class<?> type;
 
-    public ColumnAttribute(String columnName, Class<?> type) {
+    public ColumnAttribute(String columnName, String fieldName, Class<?> type) {
         this.columnName = columnName;
+        this.fieldName = fieldName;
         this.type = type;
     }
 
@@ -16,28 +18,33 @@ public class ColumnAttribute {
         return columnName;
     }
 
+    public String fieldName() {
+        return fieldName;
+    }
+
     public Class<?> type() {
         return type;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (ColumnAttribute) obj;
-        return Objects.equals(this.columnName, that.columnName) &&
-                Objects.equals(this.type, that.type);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ColumnAttribute that = (ColumnAttribute) o;
+        return Objects.equals(columnName, that.columnName) && Objects.equals(fieldName, that.fieldName) && Objects.equals(type, that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(columnName, type);
+        return Objects.hash(columnName, fieldName, type);
     }
 
     @Override
     public String toString() {
-        return "ColumnAttribute[" +
-                "columnName=" + columnName + ", " +
-                "type=" + type + ']';
+        return "ColumnAttribute{" +
+                "columnName='" + columnName + '\'' +
+                ", fieldName='" + fieldName + '\'' +
+                ", type=" + type +
+                '}';
     }
 }

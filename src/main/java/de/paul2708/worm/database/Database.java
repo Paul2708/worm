@@ -13,7 +13,7 @@ public interface Database {
 
     Object save(Object key, Object entity);
 
-    Collection<Object> findAll();
+    Collection<Object> findAll(AttributeResolver resolver);
 
     Optional<Object> findById(Object key);
 

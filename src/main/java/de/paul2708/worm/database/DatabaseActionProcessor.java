@@ -9,9 +9,11 @@ import java.lang.reflect.Field;
 public class DatabaseActionProcessor {
 
     private final Database database;
+    private final Class<?> entityClass;
 
-    public DatabaseActionProcessor(Database database) {
+    public DatabaseActionProcessor(Database database, Class<?> entityClass) {
         this.database = database;
+        this.entityClass = entityClass;
     }
 
     public Object process(DatabaseAction action) {
@@ -31,7 +33,7 @@ public class DatabaseActionProcessor {
 
             return database.save(key, targetEntity);
         } else if (action instanceof FindAllAction) {
-            return database.findAll();
+            return database.findAll(new AttributeResolver(entityClass));
         } else if (action instanceof FindByIdAction) {
             return database.findById(action.getMethodInformation().args()[0]);
         } else if (action instanceof DeleteAction) {

@@ -11,12 +11,14 @@ import java.util.List;
 public class RepositoryInvocationHandler implements InvocationHandler {
 
     private final Class<?> repositoryClass;
+    private final Class<?> entityClass;
     private final DatabaseActionProcessor processor;
 
-    public RepositoryInvocationHandler(Class<?> repositoryClass, Database database) {
+    public RepositoryInvocationHandler(Class<?> repositoryClass, Class<?> entityClass, Database database) {
         this.repositoryClass = repositoryClass;
+        this.entityClass = entityClass;
 
-        this.processor = new DatabaseActionProcessor(database);
+        this.processor = new DatabaseActionProcessor(database, entityClass);
     }
 
     @Override

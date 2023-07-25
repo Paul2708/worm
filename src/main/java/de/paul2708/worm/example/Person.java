@@ -11,10 +11,14 @@ public class Person {
 
     @Column("name")
     @MaxLength(255)
-    private final String name;
+    private String name;
 
     @Column("age")
-    private final int age;
+    private int age;
+
+    public Person() {
+
+    }
 
     public Person(String name, int age) {
         this.name = name;

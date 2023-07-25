@@ -8,13 +8,8 @@ import de.paul2708.worm.columns.StringColumnAttribute;
 import de.paul2708.worm.database.Database;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.sql.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {
@@ -104,10 +99,27 @@ public class MySQLDatabase implements Database {
     }
 
     @Override
-    public Collection<Object> findAll() {
+    public Collection<Object> findAll(AttributeResolver resolver) {
+        String query = "SELECT * FROM %s".formatted(resolver.getTable());
 
-        String query = "SELECT * FROM %s".formatted();
-        return null;
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            ResultSet resultSet = stmt.executeQuery();
+            List<Object> result = new ArrayList<>();
+
+            while (resultSet.next()) {
+                Map<String, Object> fieldValues = new HashMap<>();
+                for (ColumnAttribute column : resolver.getColumns()) {
+                    fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
+                }
+
+                Object instance = resolver.createInstance(fieldValues);
+                result.add(instance);
+            }
+
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -118,6 +130,20 @@ public class MySQLDatabase implements Database {
     @Override
     public void delete(Object key) {
 
+    }
+
+    private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
+        try {
+            if (expectedType.equals(String.class)) {
+                return resultSet.getString(column);
+            } else if (expectedType.equals(Integer.class) || expectedType.equals(int.class)) {
+                return resultSet.getInt(column);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return null;
     }
 
     private void setValue(PreparedStatement statement, Class<?> type, int index, Object value) {

@@ -4,14 +4,14 @@ public class StringColumnAttribute extends ColumnAttribute {
 
     private final int maxLength;
 
-    public StringColumnAttribute(String columnName, int maxLength) {
-        super(columnName, String.class);
+    public StringColumnAttribute(String columnName, String fieldType, int maxLength) {
+        super(columnName, fieldType, String.class);
 
         this.maxLength = maxLength;
     }
 
-    public StringColumnAttribute(String columnName) {
-        this(columnName, -1);
+    public StringColumnAttribute(String columnName, String fieldType) {
+        this(columnName, fieldType, -1);
     }
 
     public boolean hasMaximumLength() {
