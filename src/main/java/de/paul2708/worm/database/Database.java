@@ -7,6 +7,8 @@ public interface Database {
 
     void connect();
 
+    void prepare(Class<?> entityClass);
+
     Object save(Object key, Object entity);
 
     Collection<Object> findAll();

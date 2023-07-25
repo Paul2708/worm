@@ -10,7 +10,9 @@ public final class Repository {
 
     }
 
-    public static <T, K, R extends CrudRepository<T, K>> R create(Class<R> repositoryClass, Database database) {
+    public static <T, K, R extends CrudRepository<T, K>> R create(Class<R> repositoryClass, Class<T> entityClass, Database database) {
+        database.prepare(entityClass);
+
         RepositoryInvocationHandler handler = new RepositoryInvocationHandler(repositoryClass, database);
 
         return (R) Proxy.newProxyInstance(

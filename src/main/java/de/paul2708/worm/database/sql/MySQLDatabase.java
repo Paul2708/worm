@@ -2,6 +2,7 @@ package de.paul2708.worm.database.sql;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import de.paul2708.worm.columns.Table;
 import de.paul2708.worm.database.Database;
 
 import javax.sql.DataSource;
@@ -47,6 +48,11 @@ public class MySQLDatabase implements Database {
         config.setMinimumIdle(2);
 
         this.dataSource = new HikariDataSource(config);
+    }
+
+    @Override
+    public void prepare(Class<?> entityClass) {
+        System.out.printf("Create table %s%n", entityClass.getAnnotation(Table.class).value());
     }
 
     @Override
