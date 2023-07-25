@@ -56,9 +56,7 @@ public class MySQLDatabase implements Database {
     }
 
     @Override
-    public void prepare(Class<?> entityClass) {
-        AttributeResolver resolver = new AttributeResolver(entityClass);
-
+    public void prepare(AttributeResolver resolver) {
         String sqlColumns = resolver.getColumns().stream()
                 .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
                 .collect(Collectors.joining(", "));
@@ -107,6 +105,8 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Collection<Object> findAll() {
+
+        String query = "SELECT * FROM %s".formatted();
         return null;
     }
 

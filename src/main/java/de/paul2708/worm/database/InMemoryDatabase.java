@@ -1,5 +1,7 @@
 package de.paul2708.worm.database;
 
+import de.paul2708.worm.columns.AttributeResolver;
+
 import java.util.*;
 
 public class InMemoryDatabase implements Database {
@@ -16,8 +18,8 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
-    public void prepare(Class<?> entityClass) {
-        System.out.printf("Prepare database for %s%n", entityClass.getName());
+    public void prepare(AttributeResolver resolver) {
+        System.out.printf("Prepare database for %s%n", resolver.getTable());
     }
 
     @Override
