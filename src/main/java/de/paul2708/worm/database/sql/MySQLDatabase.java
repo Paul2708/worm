@@ -6,7 +6,6 @@ import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.columns.StringColumnAttribute;
 import de.paul2708.worm.database.Database;
-import org.w3c.dom.Attr;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -14,7 +13,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {
 
@@ -57,27 +58,17 @@ public class MySQLDatabase implements Database {
     @Override
     public void prepare(Class<?> entityClass) {
         AttributeResolver resolver = new AttributeResolver(entityClass);
+        List<ColumnAttribute> columnAttributes = resolver.getColumns();
 
-        StringBuilder query = new StringBuilder("CREATE TABLE IF NOT EXISTS %s (".formatted(resolver.getTable()));
+        String sqlColumns = columnAttributes.stream()
+                .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
+                .collect(Collectors.joining(", "));
 
-        query.append(resolver.getPrimaryKey().columnName())
-                .append(" ")
-                .append(toSqlType(resolver.getPrimaryKey()))
-                .append(", ");
+        String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s))"
+                .formatted(resolver.getTable(), sqlColumns, resolver.getPrimaryKey().columnName());
 
-        for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-            query.append(column.columnName())
-                    .append(" ")
-                    .append(toSqlType(column))
-                    .append(", ");
-        }
-
-        query.append("PRIMARY KEY (")
-                .append(resolver.getPrimaryKey().columnName())
-                .append("));");
-
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.prepareStatement(query.toString())) {
-            stmt.execute(query.toString());
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.prepareStatement(query)) {
+            stmt.execute(query);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -85,7 +76,7 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Object save(Object key, Object entity) {
-        AttributeResolver resolver = new AttributeResolver(entity);
+        /*AttributeResolver resolver = new AttributeResolver(entity);
 
         // TODO: Update on duplicated key
         String query = "INSERT INTO " + resolver.getTable() + " (" + resolver.getPrimaryKey().columnName() + ", ";
@@ -117,7 +108,8 @@ public class MySQLDatabase implements Database {
             return entity;
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
+        }*/
+        return null;
     }
 
     @Override

@@ -33,19 +33,24 @@ public class AttributeResolver {
         return null;
     }
 
-    public List<ColumnAttribute> getColumnsWithoutPrimaryKey() {
+    public List<ColumnAttribute> getColumns() {
         List<ColumnAttribute> columns = new ArrayList<>();
+
+        columns.add(this.getPrimaryKey());
 
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Column.class) && !field.isAnnotationPresent(PrimaryKey.class)) {
                 String column = field.getAnnotation(Column.class).value();
 
+                ColumnAttribute columnAttribute;
                 if (field.getType().equals(String.class)) {
                     int maxLength = field.isAnnotationPresent(MaxLength.class) ? field.getAnnotation(MaxLength.class).value() : -1;
-                    columns.add(new StringColumnAttribute(column, maxLength));
+                    columnAttribute = new StringColumnAttribute(column, maxLength);
                 } else {
-                    columns.add(new ColumnAttribute(column, field.getType()));
+                    columnAttribute = new ColumnAttribute(column, field.getType());
                 }
+
+                columns.add(columnAttribute);
             }
         }
 
