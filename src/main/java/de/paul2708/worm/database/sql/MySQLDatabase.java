@@ -4,11 +4,11 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.Table;
 import de.paul2708.worm.database.Database;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
@@ -55,13 +55,23 @@ public class MySQLDatabase implements Database {
     @Override
     public void prepare(Class<?> entityClass) {
         AttributeResolver resolver = new AttributeResolver(entityClass);
+
+        String query = "CREATE TABLE IF NOT EXISTS " + resolver.getTable() + " ( ";
+
+        query += resolver.getPrimaryKey().columnName() + " " + toSqlType(resolver.getPrimaryKey().fieldType()) + ", ";
         for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-            System.out.println(column + ": " + column.type().getName());
+            query += column.columnName() + " " + toSqlType(column.type()) + ", ";
         }
 
-        // TODO: Build create table statement
+        query += "PRIMARY KEY (" + resolver.getPrimaryKey().columnName() + "));";
 
-        System.out.printf("Create table %s%n", entityClass.getAnnotation(Table.class).value());
+        System.out.printf("Creat table using query: %s%n", query);
+
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+            stmt.execute(query);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -88,5 +98,15 @@ public class MySQLDatabase implements Database {
     @Override
     public void delete(Object key) {
 
+    }
+
+    private String toSqlType(Class<?> type) {
+        if (type.equals(String.class)) {
+            return "TEXT";
+        } else if (type.equals(Integer.class) || type.equals(int.class)) {
+            return "INT";
+        }
+
+        throw new IllegalArgumentException("Could not find a SQL type for %s".formatted(type.getName()));
     }
 }
