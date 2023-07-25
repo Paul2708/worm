@@ -56,19 +56,26 @@ public class MySQLDatabase implements Database {
     public void prepare(Class<?> entityClass) {
         AttributeResolver resolver = new AttributeResolver(entityClass);
 
-        String query = "CREATE TABLE IF NOT EXISTS " + resolver.getTable() + " ( ";
+        StringBuilder query = new StringBuilder("CREATE TABLE IF NOT EXISTS %s (".formatted(resolver.getTable()));
 
-        query += resolver.getPrimaryKey().columnName() + " " + toSqlType(resolver.getPrimaryKey()) + ", ";
+        query.append(resolver.getPrimaryKey().columnName())
+                .append(" ")
+                .append(toSqlType(resolver.getPrimaryKey()))
+                .append(", ");
+
         for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-            query += column.columnName() + " " + toSqlType(column) + ", ";
+            query.append(column.columnName())
+                    .append(" ")
+                    .append(toSqlType(column))
+                    .append(", ");
         }
 
-        query += "PRIMARY KEY (" + resolver.getPrimaryKey().columnName() + "));";
+        query.append("PRIMARY KEY (")
+                .append(resolver.getPrimaryKey().columnName())
+                .append("));");
 
-        System.out.printf("Creat table using query: %s%n", query);
-
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-            stmt.execute(query);
+        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.prepareStatement(query.toString())) {
+            stmt.execute(query.toString());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
