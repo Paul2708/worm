@@ -58,9 +58,8 @@ public class MySQLDatabase implements Database {
     @Override
     public void prepare(Class<?> entityClass) {
         AttributeResolver resolver = new AttributeResolver(entityClass);
-        List<ColumnAttribute> columnAttributes = resolver.getColumns();
 
-        String sqlColumns = columnAttributes.stream()
+        String sqlColumns = resolver.getColumns().stream()
                 .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
@@ -76,40 +75,34 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Object save(Object key, Object entity) {
-        /*AttributeResolver resolver = new AttributeResolver(entity);
+        AttributeResolver resolver = new AttributeResolver(entity);
 
         // TODO: Update on duplicated key
-        String query = "INSERT INTO " + resolver.getTable() + " (" + resolver.getPrimaryKey().columnName() + ", ";
 
-        for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-            query += column.columnName() + ", ";
-        }
-        query = query.substring(0, query.length() - 2);
-        query += ") values (?, ";
+        String sqlColumns = resolver.getColumns().stream()
+                .map(ColumnAttribute::columnName)
+                .collect(Collectors.joining(", "));
+        String sqlValues = resolver.getColumns().stream()
+                .map(column -> "?")
+                .collect(Collectors.joining(", "));
 
-        for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-            query += "?, ";
-        }
-        query = query.substring(0, query.length() - 2);
-        query += ")";
+        String query = "INSERT INTO %s (%s) VALUES (%s)"
+                .formatted(resolver.getTable(), sqlColumns, sqlValues);
 
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
-
-            int index = 2;
-            for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
+            int index = 1;
+            for (ColumnAttribute column : resolver.getColumns()) {
                 setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
                 index++;
             }
 
-            System.out.println(stmt);
             stmt.execute();
 
+            // TODO: Set key from database if key is null
             return entity;
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        }*/
-        return null;
+        }
     }
 
     @Override
@@ -128,18 +121,14 @@ public class MySQLDatabase implements Database {
     }
 
     private void setValue(PreparedStatement statement, Class<?> type, int index, Object value) {
-        if (type.equals(String.class)) {
-            try {
+        try {
+            if (type.equals(String.class)) {
                 statement.setString(index, value.toString());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        } else if (type.equals(Integer.class) || type.equals(int.class)) {
-            try {
+            } else if (type.equals(Integer.class) || type.equals(int.class)) {
                 statement.setInt(index, (int) value);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -148,7 +137,7 @@ public class MySQLDatabase implements Database {
 
         if (attribute instanceof StringColumnAttribute stringAttribute) {
             if (stringAttribute.hasMaximumLength()) {
-                return "VARCHAR(" + stringAttribute.getMaxLength() + ")";
+                return "VARCHAR(%d)".formatted(stringAttribute.getMaxLength());
             } else {
                 return "TEXT";
             }
