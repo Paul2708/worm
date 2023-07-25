@@ -4,11 +4,11 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.columns.StringColumnAttribute;
 import de.paul2708.worm.database.Database;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
@@ -58,9 +58,9 @@ public class MySQLDatabase implements Database {
 
         String query = "CREATE TABLE IF NOT EXISTS " + resolver.getTable() + " ( ";
 
-        query += resolver.getPrimaryKey().columnName() + " " + toSqlType(resolver.getPrimaryKey().fieldType()) + ", ";
+        query += resolver.getPrimaryKey().columnName() + " " + toSqlType(resolver.getPrimaryKey()) + ", ";
         for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-            query += column.columnName() + " " + toSqlType(column.type()) + ", ";
+            query += column.columnName() + " " + toSqlType(column) + ", ";
         }
 
         query += "PRIMARY KEY (" + resolver.getPrimaryKey().columnName() + "));";
@@ -100,10 +100,18 @@ public class MySQLDatabase implements Database {
 
     }
 
-    private String toSqlType(Class<?> type) {
-        if (type.equals(String.class)) {
-            return "TEXT";
-        } else if (type.equals(Integer.class) || type.equals(int.class)) {
+    private String toSqlType(ColumnAttribute attribute) {
+        Class<?> type = attribute.type();
+
+        if (attribute instanceof StringColumnAttribute stringAttribute) {
+            if (stringAttribute.hasMaximumLength()) {
+                return "VARCHAR(" + stringAttribute.getMaxLength() + ")";
+            } else {
+                return "TEXT";
+            }
+        }
+
+        if (type.equals(Integer.class) || type.equals(int.class)) {
             return "INT";
         }
 
