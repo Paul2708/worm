@@ -87,6 +87,7 @@ public class MySQLDatabase implements Database {
     public Object save(Object key, Object entity) {
         AttributeResolver resolver = new AttributeResolver(entity);
 
+        // TODO: Update on duplicated key
         String query = "INSERT INTO " + resolver.getTable() + " (" + resolver.getPrimaryKey().columnName() + ", ";
 
         for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
@@ -102,7 +103,7 @@ public class MySQLDatabase implements Database {
         query += ")";
 
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().fieldType(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
+            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
 
             int index = 2;
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
