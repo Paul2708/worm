@@ -51,4 +51,31 @@ public class AttributeResolver {
 
         return columns;
     }
+
+    public Object getValueByColumn(Object object, String column) {
+        for (Field field : clazz.getDeclaredFields()) {
+            if (field.isAnnotationPresent(PrimaryKey.class)) {
+                if (field.getAnnotation(PrimaryKey.class).value().equals(column)) {
+                    try {
+                        field.setAccessible(true);
+                        return field.get(object);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            if (field.isAnnotationPresent(Column.class)) {
+                if (field.getAnnotation(Column.class).value().equals(column)) {
+                    try {
+                        field.setAccessible(true);
+                        return field.get(object);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
 }

@@ -6,9 +6,11 @@ import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.columns.StringColumnAttribute;
 import de.paul2708.worm.database.Database;
+import org.w3c.dom.Attr;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Collection;
@@ -83,10 +85,35 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Object save(Object key, Object entity) {
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-            stmt.execute("SELECT 1");
+        AttributeResolver resolver = new AttributeResolver(entity);
 
-            return null;
+        String query = "INSERT INTO " + resolver.getTable() + " (" + resolver.getPrimaryKey().columnName() + ", ";
+
+        for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
+            query += column.columnName() + ", ";
+        }
+        query = query.substring(0, query.length() - 2);
+        query += ") values (?, ";
+
+        for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
+            query += "?, ";
+        }
+        query = query.substring(0, query.length() - 2);
+        query += ")";
+
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            setValue(stmt, resolver.getPrimaryKey().fieldType(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
+
+            int index = 2;
+            for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
+                setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
+                index++;
+            }
+
+            System.out.println(stmt);
+            stmt.execute();
+
+            return entity;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -105,6 +132,22 @@ public class MySQLDatabase implements Database {
     @Override
     public void delete(Object key) {
 
+    }
+
+    private void setValue(PreparedStatement statement, Class<?> type, int index, Object value) {
+        if (type.equals(String.class)) {
+            try {
+                statement.setString(index, value.toString());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (type.equals(Integer.class) || type.equals(int.class)) {
+            try {
+                statement.setInt(index, (int) value);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private String toSqlType(ColumnAttribute attribute) {
