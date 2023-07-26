@@ -17,9 +17,10 @@ public class DatabaseActionProcessor {
     }
 
     public Object process(DatabaseAction action) {
+        AttributeResolver resolver = new AttributeResolver(entityClass);
+
         if (action instanceof SaveAction) {
             Object targetEntity = action.getMethodInformation().args()[0];
-            AttributeResolver resolver = new AttributeResolver(targetEntity);
 
             PrimaryKeyAttribute primaryKey = resolver.getPrimaryKey();
             Object key;
@@ -31,14 +32,13 @@ public class DatabaseActionProcessor {
                 key = getField(primaryKey.fieldName(), targetEntity);
             }
 
-            return database.save(key, targetEntity);
+            return database.save(resolver, key, targetEntity);
         } else if (action instanceof FindAllAction) {
             return database.findAll(new AttributeResolver(entityClass));
         } else if (action instanceof FindByIdAction) {
-            return database.findById(action.getMethodInformation().args()[0]);
+            return database.findById(resolver, action.getMethodInformation().args()[0]);
         } else if (action instanceof DeleteAction) {
             Object targetEntity = action.getMethodInformation().args()[0];
-            AttributeResolver resolver = new AttributeResolver(targetEntity);
 
             Object key = getField(resolver.getPrimaryKey().fieldName(), targetEntity);
 
@@ -46,7 +46,7 @@ public class DatabaseActionProcessor {
                 throw new IllegalArgumentException("Cannot access primary key");
             }
 
-            database.delete(key);
+            database.delete(resolver, key);
 
             return null;
         }

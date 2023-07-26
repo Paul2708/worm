@@ -67,9 +67,7 @@ public class MySQLDatabase implements Database {
     }
 
     @Override
-    public Object save(Object key, Object entity) {
-        AttributeResolver resolver = new AttributeResolver(entity);
-
+    public Object save(AttributeResolver resolver, Object key, Object entity) {
         // TODO: Update on duplicated key
 
         String sqlColumns = resolver.getColumns().stream()
@@ -123,12 +121,12 @@ public class MySQLDatabase implements Database {
     }
 
     @Override
-    public Optional<Object> findById(Object key) {
+    public Optional<Object> findById(AttributeResolver resolver, Object key) {
         return Optional.empty();
     }
 
     @Override
-    public void delete(Object key) {
+    public void delete(AttributeResolver resolver, Object key) {
 
     }
 

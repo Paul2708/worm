@@ -11,11 +11,11 @@ public interface Database {
 
     void prepare(AttributeResolver resolver);
 
-    Object save(Object key, Object entity);
+    Object save(AttributeResolver resolver, Object key, Object entity);
 
     Collection<Object> findAll(AttributeResolver resolver);
 
-    Optional<Object> findById(Object key);
+    Optional<Object> findById(AttributeResolver resolver, Object key);
 
-    void delete(Object key);
+    void delete(AttributeResolver resolver, Object key);
 }

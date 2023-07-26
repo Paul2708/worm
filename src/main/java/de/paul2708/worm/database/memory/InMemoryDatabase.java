@@ -24,7 +24,7 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
-    public Object save(Object key, Object entity) {
+    public Object save(AttributeResolver resolver, Object key, Object entity) {
         database.put(key, entity);
 
         return entity;
@@ -36,12 +36,12 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
-    public Optional<Object> findById(Object key) {
+    public Optional<Object> findById(AttributeResolver resolver, Object key) {
         return Optional.ofNullable(database.get(key));
     }
 
     @Override
-    public void delete(Object key) {
+    public void delete(AttributeResolver resolver, Object key) {
         database.remove(key);
     }
 }
