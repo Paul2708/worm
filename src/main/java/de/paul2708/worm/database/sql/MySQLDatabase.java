@@ -122,7 +122,29 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Optional<Object> findById(AttributeResolver resolver, Object key) {
-        return Optional.empty();
+        String query = "SELECT * FROM %s WHERE %s = ?"
+                .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
+
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
+            ResultSet resultSet = stmt.executeQuery();
+
+            // TODO: Handle multiple responses, throw error
+            if (resultSet.next()) {
+                // TODO: Auslagern
+                Map<String, Object> fieldValues = new HashMap<>();
+                for (ColumnAttribute column : resolver.getColumns()) {
+                    fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
+                }
+
+                Object instance = resolver.createInstance(fieldValues);
+                return Optional.of(instance);
+            } else {
+                return Optional.empty();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
