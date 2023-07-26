@@ -17,5 +17,5 @@ public interface Database {
 
     Optional<Object> findById(AttributeResolver resolver, Object key);
 
-    void delete(AttributeResolver resolver, Object key);
+    void delete(AttributeResolver resolver, Object entity);
 }

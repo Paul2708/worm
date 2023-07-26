@@ -46,7 +46,7 @@ public class DatabaseActionProcessor {
                 throw new IllegalArgumentException("Cannot access primary key");
             }
 
-            database.delete(resolver, key);
+            database.delete(resolver, targetEntity);
 
             return null;
         }

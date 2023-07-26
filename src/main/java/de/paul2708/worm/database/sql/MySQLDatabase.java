@@ -148,8 +148,16 @@ public class MySQLDatabase implements Database {
     }
 
     @Override
-    public void delete(AttributeResolver resolver, Object key) {
+    public void delete(AttributeResolver resolver, Object entity) {
+        String query = "DELETE FROM %s WHERE %s = ?"
+                .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
+            stmt.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {

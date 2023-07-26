@@ -41,7 +41,7 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
-    public void delete(AttributeResolver resolver, Object key) {
-        database.remove(key);
+    public void delete(AttributeResolver resolver, Object entity) {
+        database.remove(entity);
     }
 }
