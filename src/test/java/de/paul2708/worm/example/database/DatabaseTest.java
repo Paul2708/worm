@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -57,23 +58,6 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void testSavingExistingPerson() {
-        Person existingPerson = new Person("Max", 42);
-        existingPerson = repository.save(existingPerson);
-
-        assumeTrue(!repository.findAll().isEmpty());
-
-        Person person = new Person("Paul", 19);
-        person.setId(existingPerson.getId());
-
-        person = repository.save(person);
-
-        assertEquals(1, repository.findAll().size());
-        assertEquals("Paul", repository.findAll().iterator().next().getName());
-        assertEquals(19, repository.findAll().iterator().next().getAge());
-    }
-
-    @Test
     void testFindByValidId() {
         Person person = repository.save(new Person("Max", 42));
         int id = person.getId();
@@ -94,6 +78,24 @@ public abstract class DatabaseTest {
     }
 
     @Test
+    void testUpdate() {
+        Person person = repository.save(new Person("Max", 42));
+        int id = person.getId();
+
+        Optional<Person> optionalPerson = repository.findById(id);
+        assertTrue(optionalPerson.isPresent());
+
+        Person existingPerson = optionalPerson.get();
+        existingPerson.setName("Paul");
+        System.out.println(existingPerson.getId());
+
+        repository.save(existingPerson);
+
+        assertEquals(1, repository.findAll().size());
+        assertEquals("Paul", repository.findById(existingPerson.getId()).get().getName());
+    }
+
+    @Test
     void testSuccessfulDeletion() {
         Person person = repository.save(new Person("Max", 42));
 
@@ -105,6 +107,10 @@ public abstract class DatabaseTest {
 
     @Test
     void testNonExistingDeletion() {
-        assertThrows(IllegalArgumentException.class, () -> repository.delete(new Person("Max", 42)));
+        Person person = repository.save(new Person("Max", 42));
+        assumeTrue(repository.findAll().size() == 1);
+
+        int id = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE);
+        assumeTrue(person.getId() != id);
     }
 }

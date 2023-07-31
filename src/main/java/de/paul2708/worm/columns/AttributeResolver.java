@@ -10,10 +10,6 @@ public class AttributeResolver {
 
     public final Class<?> clazz;
 
-    public AttributeResolver(Object object) {
-        this.clazz = object.getClass();
-    }
-
     public AttributeResolver(Class<?> clazz) {
         this.clazz = clazz;
     }
@@ -86,21 +82,32 @@ public class AttributeResolver {
         return null;
     }
 
+    public void setField(String fieldName, Object object, Object value) {
+        try {
+            Field field = object.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+
+            field.set(object, value);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Object createInstance(Map<String, Object> fieldValues) {
         try {
             Object object = clazz.getConstructor().newInstance();
 
             for (Map.Entry<String, Object> entry : fieldValues.entrySet()) {
-                Field field = clazz.getDeclaredField(entry.getKey());
-                field.setAccessible(true);
-
-                field.set(object, entry.getValue());
+                setField(entry.getKey(), object, entry.getValue());
             }
 
             return object;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException |
-                 NoSuchFieldException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Class<?> getTargetClass() {
+        return clazz;
     }
 }
