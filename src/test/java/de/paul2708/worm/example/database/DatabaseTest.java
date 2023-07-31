@@ -8,25 +8,23 @@ import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public abstract class DatabaseTest {
 
-    private final CrudRepository<Person, Integer> repository;
+    private CrudRepository<Person, Integer> repository;
 
-    public DatabaseTest(Database database) {
-        database.connect();
-
-        this.repository = Repository.create(PersonRepository.class, Person.class, database);
-    }
-
-    public abstract void clearDatabase();
+    public abstract Database createEmptyDatabase();
 
     @BeforeEach
     void resetDatabase() {
-        clearDatabase();
+        Database emptyDatabase = createEmptyDatabase();
+        emptyDatabase.connect();
+
+        this.repository = Repository.create(PersonRepository.class, Person.class, emptyDatabase);
 
         assumeTrue(repository.findAll().isEmpty());
     }
@@ -73,5 +71,40 @@ public abstract class DatabaseTest {
         assertEquals(1, repository.findAll().size());
         assertEquals("Paul", repository.findAll().iterator().next().getName());
         assertEquals(19, repository.findAll().iterator().next().getAge());
+    }
+
+    @Test
+    void testFindByValidId() {
+        Person person = repository.save(new Person("Max", 42));
+        int id = person.getId();
+
+        Optional<Person> optionalPerson = repository.findById(id);
+        assertTrue(optionalPerson.isPresent());
+
+        Person foundPerson = optionalPerson.get();
+        assertEquals("Max", foundPerson.getName());
+        assertEquals(42, foundPerson.getAge());
+        assertEquals(id, foundPerson.getId());
+    }
+
+    @Test
+    void testFindByInvalidId() {
+        Optional<Person> optionalPerson = repository.findById(42);
+        assertTrue(optionalPerson.isEmpty());
+    }
+
+    @Test
+    void testSuccessfulDeletion() {
+        Person person = repository.save(new Person("Max", 42));
+
+        assumeTrue(repository.findById(person.getId()).isPresent());
+
+        repository.delete(person);
+        assertTrue(repository.findById(person.getId()).isEmpty());
+    }
+
+    @Test
+    void testNonExistingDeletion() {
+        assertThrows(IllegalArgumentException.class, () -> repository.delete(new Person("Max", 42)));
     }
 }
