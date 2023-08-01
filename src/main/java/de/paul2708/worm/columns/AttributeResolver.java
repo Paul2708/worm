@@ -3,6 +3,7 @@ package de.paul2708.worm.columns;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +36,15 @@ public class AttributeResolver {
         List<ColumnAttribute> columns = new ArrayList<>();
 
         columns.add(this.getPrimaryKey());
+        columns.addAll(getColumnsWithoutPrimaryKey());
+
+        Collections.sort(columns);
+
+        return columns;
+    }
+
+    public List<ColumnAttribute> getColumnsWithoutPrimaryKey() {
+        List<ColumnAttribute> columns = new ArrayList<>();
 
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Column.class) && !field.isAnnotationPresent(PrimaryKey.class)) {
@@ -51,6 +61,8 @@ public class AttributeResolver {
                 columns.add(columnAttribute);
             }
         }
+
+        Collections.sort(columns);
 
         return columns;
     }
@@ -102,7 +114,8 @@ public class AttributeResolver {
             }
 
             return object;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }

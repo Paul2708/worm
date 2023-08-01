@@ -59,8 +59,8 @@ public class MySQLDatabase implements Database {
         String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s))"
                 .formatted(resolver.getTable(), sqlColumns, resolver.getPrimaryKey().columnName());
 
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.prepareStatement(query)) {
-            stmt.execute(query);
+        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -68,21 +68,27 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Object save(AttributeResolver resolver, Object key, Object entity) {
-        // TODO: Update on duplicated key
-
         String sqlColumns = resolver.getColumns().stream()
                 .map(ColumnAttribute::columnName)
                 .collect(Collectors.joining(", "));
         String sqlValues = resolver.getColumns().stream()
                 .map(column -> "?")
                 .collect(Collectors.joining(", "));
+        String sqlUpdate = resolver.getColumnsWithoutPrimaryKey().stream()
+                .map(ColumnAttribute::columnName)
+                .map("%s = ?"::formatted)
+                .collect(Collectors.joining(", "));
 
-        String query = "INSERT INTO %s (%s) VALUES (%s)"
-                .formatted(resolver.getTable(), sqlColumns, sqlValues);
+        String query = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s"
+                .formatted(resolver.getTable(), sqlColumns, sqlValues, sqlUpdate);
 
         try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
+                setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
+                index++;
+            }
+            for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
                 setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
                 index++;
             }

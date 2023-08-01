@@ -2,7 +2,7 @@ package de.paul2708.worm.columns;
 
 import java.util.Objects;
 
-public class ColumnAttribute {
+public class ColumnAttribute implements Comparable<ColumnAttribute> {
 
     private final String columnName;
     private final String fieldName;
@@ -24,6 +24,11 @@ public class ColumnAttribute {
 
     public Class<?> type() {
         return type;
+    }
+
+    @Override
+    public int compareTo(ColumnAttribute other) {
+        return columnName.compareTo(other.columnName);
     }
 
     @Override
