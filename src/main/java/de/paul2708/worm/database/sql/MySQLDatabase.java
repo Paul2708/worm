@@ -4,11 +4,15 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.StringColumnAttribute;
 import de.paul2708.worm.database.Database;
+import de.paul2708.worm.database.sql.columns.ColumnsRegistry;
+import de.paul2708.worm.database.sql.columns.SqlColumnDataType;
 
 import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -167,12 +171,10 @@ public class MySQLDatabase implements Database {
     }
 
     private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
-        try {
-            if (expectedType.equals(String.class)) {
-                return resultSet.getString(column);
-            } else if (expectedType.equals(Integer.class) || expectedType.equals(int.class)) {
-                return resultSet.getInt(column);
-            }
+		try {
+			if (ColumnsRegistry.getColumnDataType(expectedType) instanceof SqlColumnDataType<?> dataType) {
+				return dataType.getValue(resultSet, column);
+			}
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -180,14 +182,12 @@ public class MySQLDatabase implements Database {
         return null;
     }
 
-    private void setValue(PreparedStatement statement, Class<?> type, int index, Object value) {
+    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
         try {
-            if (type.equals(String.class)) {
-                statement.setString(index, value.toString());
-            } else if (type.equals(Integer.class) || type.equals(int.class)) {
-                statement.setInt(index, (int) value);
-            }
-        } catch (SQLException e) {
+			if (ColumnsRegistry.getColumnDataType(expectedType) instanceof SqlColumnDataType dataType) {
+				dataType.setValue(statement, index, value);
+			}
+		} catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
@@ -195,17 +195,9 @@ public class MySQLDatabase implements Database {
     private String toSqlType(ColumnAttribute attribute) {
         Class<?> type = attribute.type();
 
-        if (attribute instanceof StringColumnAttribute stringAttribute) {
-            if (stringAttribute.hasMaximumLength()) {
-                return "VARCHAR(%d)".formatted(stringAttribute.getMaxLength());
-            } else {
-                return "TEXT";
-            }
-        }
-
-        if (type.equals(Integer.class) || type.equals(int.class)) {
-            return "INT";
-        }
+		if (ColumnsRegistry.getColumnDataType(type) instanceof SqlColumnDataType dataType) {
+			return dataType.toSqlType(attribute);
+		}
 
         throw new IllegalArgumentException("Could not find a SQL type for %s".formatted(type.getName()));
     }
