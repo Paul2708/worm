@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -32,7 +33,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testBasicSave() {
-        Person person = new Person("Max", 42);
+        Person person = new Person(UUID.randomUUID(), "Max", 42);
         repository.save(person);
 
         assertEquals(1, repository.findAll().size());
@@ -40,7 +41,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testGeneratedKeyOnSave() {
-        Person person = new Person("Max", 42);
+        Person person = new Person(UUID.randomUUID(), "Max", 42);
 
         assumeTrue(person.getId() == 0);
 
@@ -50,7 +51,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testSavedAttributes() {
-        Person person = new Person("Max", 42);
+        Person person = new Person(UUID.randomUUID(), "Max", 42);
         Person savedPerson = repository.save(person);
 
         assertEquals(person.getName(), savedPerson.getName());
@@ -59,7 +60,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testFindByValidId() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
         int id = person.getId();
 
         Optional<Person> optionalPerson = repository.findById(id);
@@ -79,7 +80,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testUpdate() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
         int id = person.getId();
 
         Optional<Person> optionalPerson = repository.findById(id);
@@ -97,7 +98,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testSuccessfulDeletion() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
 
         assumeTrue(repository.findById(person.getId()).isPresent());
 
@@ -107,10 +108,20 @@ public abstract class DatabaseTest {
 
     @Test
     void testNonExistingDeletion() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
         assumeTrue(repository.findAll().size() == 1);
 
         int id = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE);
         assumeTrue(person.getId() != id);
     }
+
+	@Test
+	void testUuidDataType() {
+		Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
+		assumeTrue(repository.findAll().size() == 1);
+
+		assumeTrue(person.getUuid() != null);
+
+		System.out.println(person.getUuid());
+	}
 }
