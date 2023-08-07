@@ -9,6 +9,8 @@ public interface Database {
 
     void connect();
 
+    // TODO: Add disconnect
+
     void prepare(AttributeResolver resolver);
 
     Object save(AttributeResolver resolver, Object key, Object entity);
