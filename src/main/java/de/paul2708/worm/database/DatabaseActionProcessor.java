@@ -1,7 +1,7 @@
 package de.paul2708.worm.database;
 
 import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.PrimaryKeyAttribute;
+import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.repository.actions.*;
 
 import java.lang.reflect.Field;
@@ -22,7 +22,7 @@ public class DatabaseActionProcessor {
         if (action instanceof SaveAction) {
             Object targetEntity = action.getMethodInformation().args()[0];
 
-            PrimaryKeyAttribute primaryKey = resolver.getPrimaryKey();
+            ColumnAttribute primaryKey = resolver.getPrimaryKey();
             Object key = resolver.getValueByColumn(targetEntity, primaryKey.columnName());
 
             return database.save(resolver, key, targetEntity);
