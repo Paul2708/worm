@@ -21,7 +21,7 @@ public class MySQLDatabaseTest extends DatabaseTest {
             Connection connection = DriverManager.getConnection(
                     "jdbc:mysql://%s:%s/%s".formatted(HOST, PORT, DATABASE), USERNAME, PASSWORD);
             Statement statement = connection.createStatement();
-            statement.execute("DROP TABLE persons");
+            statement.execute("DROP TABLE IF EXISTS persons");
         } catch (SQLException e) {
             Assertions.fail("Failed to clear tables", e);
         }
