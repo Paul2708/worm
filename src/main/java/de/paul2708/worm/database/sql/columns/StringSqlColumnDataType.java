@@ -1,7 +1,7 @@
 package de.paul2708.worm.database.sql.columns;
 
 import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.StringColumnAttribute;
+import de.paul2708.worm.columns.LengthRestrictedProperty;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,12 +25,10 @@ final class StringSqlColumnDataType implements SqlColumnDataType<String> {
 
 	@Override
 	public String toSqlType(ColumnAttribute attribute) {
-		if (!(attribute instanceof StringColumnAttribute stringAttribute)) {
-			throw new IllegalArgumentException("Attribute is not a string attribute");
-		}
+		if (attribute.hasProperty(LengthRestrictedProperty.class)) {
+			int length = attribute.getProperty(LengthRestrictedProperty.class).length();
 
-		if (stringAttribute.hasMaximumLength()) {
-			return "VARCHAR(%d)".formatted(stringAttribute.getMaxLength());
+			return "VARCHAR(%d)".formatted(length);
 		} else {
 			return "TEXT";
 		}

@@ -50,12 +50,9 @@ public class AttributeResolver {
             if (field.isAnnotationPresent(Column.class) && !field.isAnnotationPresent(PrimaryKey.class)) {
                 String column = field.getAnnotation(Column.class).value();
 
-                ColumnAttribute columnAttribute;
-                if (field.getType().equals(String.class)) {
-                    int maxLength = field.isAnnotationPresent(MaxLength.class) ? field.getAnnotation(MaxLength.class).value() : -1;
-                    columnAttribute = new StringColumnAttribute(column, field.getName(), maxLength);
-                } else {
-                    columnAttribute = new ColumnAttribute(column, field.getName(), field.getType());
+                ColumnAttribute columnAttribute = new ColumnAttribute(column, field.getName(), field.getType());;
+                if (field.getType().equals(String.class) && field.isAnnotationPresent(MaxLength.class)) {
+                    columnAttribute.addProperty(new LengthRestrictedProperty(field.getAnnotation(MaxLength.class).value()));
                 }
 
                 columns.add(columnAttribute);
