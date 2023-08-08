@@ -92,6 +92,10 @@ public class AttributeResolver {
         return null;
     }
 
+    public Object getValueByColumn(Object object, ColumnAttribute column) {
+        return getValueByColumn(object, column.columnName());
+    }
+
     public void setField(String fieldName, Object object, Object value) {
         try {
             Field field = object.getClass().getDeclaredField(fieldName);

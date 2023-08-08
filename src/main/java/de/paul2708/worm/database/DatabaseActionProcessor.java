@@ -2,6 +2,7 @@ package de.paul2708.worm.database;
 
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.columns.properties.LengthRestrictedProperty;
 import de.paul2708.worm.repository.actions.*;
 
 import java.lang.reflect.Field;
@@ -24,6 +25,16 @@ public class DatabaseActionProcessor {
 
             ColumnAttribute primaryKey = resolver.getPrimaryKey();
             Object key = resolver.getValueByColumn(targetEntity, primaryKey.columnName());
+
+            // Check max length
+            for (ColumnAttribute column : resolver.getColumns()) {
+                if (column.hasMaximumLength()) {
+                    String text = (String) resolver.getValueByColumn(targetEntity, column);
+                    if (text.length() > column.getProperty(LengthRestrictedProperty.class).length()) {
+                        throw new IllegalStateException("The value of field %s is too long.".formatted(column.fieldName()));
+                    }
+                }
+            }
 
             return database.save(resolver, key, targetEntity);
         } else if (action instanceof FindAllAction) {
