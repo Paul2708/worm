@@ -40,31 +40,16 @@ public class AttributeResolver {
 
     public ColumnAttribute getPrimaryKey() {
         return getColumns().stream()
-                .filter(column -> column.isPrimaryKey())
+                .filter(ColumnAttribute::isPrimaryKey)
                 .findAny()
                 .orElse(null);
     }
 
     public List<ColumnAttribute> getColumnsWithoutPrimaryKey() {
-        List<ColumnAttribute> columns = new ArrayList<>();
-
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Column.class) && !field.isAnnotationPresent(PrimaryKey.class)) {
-                String column = field.getAnnotation(Column.class).value();
-
-                ColumnAttribute columnAttribute = new ColumnAttribute(column, field.getName(), field.getType());
-                ;
-                if (field.getType().equals(String.class) && field.isAnnotationPresent(MaxLength.class)) {
-                    columnAttribute.addProperty(new LengthRestrictedProperty(field.getAnnotation(MaxLength.class).value()));
-                }
-
-                columns.add(columnAttribute);
-            }
-        }
-
-        Collections.sort(columns);
-
-        return columns;
+        return getColumns().stream()
+                .filter(column -> !column.isPrimaryKey())
+                .sorted()
+                .toList();
     }
 
     private ColumnAttribute mapFieldToColumnAttribute(Field field) {
