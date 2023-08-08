@@ -1,5 +1,7 @@
 package de.paul2708.worm.columns;
 
+import de.paul2708.worm.columns.properties.LengthRestrictedProperty;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;

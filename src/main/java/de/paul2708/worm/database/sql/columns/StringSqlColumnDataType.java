@@ -1,7 +1,7 @@
 package de.paul2708.worm.database.sql.columns;
 
 import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.LengthRestrictedProperty;
+import de.paul2708.worm.columns.properties.LengthRestrictedProperty;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

@@ -1,5 +1,8 @@
 package de.paul2708.worm.columns;
 
+import de.paul2708.worm.columns.properties.ColumnProperty;
+import de.paul2708.worm.columns.properties.LengthRestrictedProperty;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
