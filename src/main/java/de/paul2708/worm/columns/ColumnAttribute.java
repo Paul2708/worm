@@ -2,6 +2,7 @@ package de.paul2708.worm.columns;
 
 import de.paul2708.worm.columns.properties.ColumnProperty;
 import de.paul2708.worm.columns.properties.LengthRestrictedProperty;
+import de.paul2708.worm.columns.properties.PrimaryKeyProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
         return properties.stream().anyMatch(property -> property instanceof LengthRestrictedProperty);
     }
 
-    public boolean hasProperty(Class<?> propertyClass) {
+    public <T extends ColumnProperty> boolean hasProperty(Class<T> propertyClass) {
         for (ColumnProperty property : properties) {
             if (property.getClass().equals(propertyClass)) {
                 return true;
@@ -63,9 +64,21 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
         return null;
     }
 
+    public boolean isPrimaryKey() {
+        return hasProperty(PrimaryKeyProperty.class);
+    }
+
     @Override
     public int compareTo(ColumnAttribute other) {
-        return columnName.compareTo(other.columnName);
+        if (hasProperty(PrimaryKeyProperty.class) && other.hasProperty(PrimaryKeyProperty.class)) {
+            return columnName.compareTo(other.columnName);
+        } else if (hasProperty(PrimaryKeyProperty.class)) {
+            return -1;
+        } else if (other.hasProperty(PrimaryKeyProperty.class)) {
+            return 1;
+        } else {
+            return columnName.compareTo(other.columnName);
+        }
     }
 
     @Override
