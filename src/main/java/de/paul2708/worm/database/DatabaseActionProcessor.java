@@ -46,7 +46,7 @@ public class DatabaseActionProcessor {
                 }
             }
 
-            return database.save(resolver, resolver.getPrimaryKey().getValue(targetEntity), targetEntity);
+            return database.save(resolver, targetEntity);
         } else if (action instanceof FindAllAction) {
             return database.findAll(new AttributeResolver(entityClass));
         } else if (action instanceof FindByIdAction) {

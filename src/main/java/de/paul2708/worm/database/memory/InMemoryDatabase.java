@@ -28,10 +28,10 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
-    public Object save(AttributeResolver resolver, Object key, Object entity) {
+    public Object save(AttributeResolver resolver, Object entity) {
         Map<Object, Object> map = database.getOrDefault(resolver.getTargetClass(), new HashMap<>());
 
-        map.put(key, entity);
+        map.put(resolver.getPrimaryKey().getValue(entity), entity);
         database.put(resolver.getTargetClass(), map);
 
         return entity;

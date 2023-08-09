@@ -13,7 +13,7 @@ public interface Database {
 
     void prepare(AttributeResolver resolver);
 
-    Object save(AttributeResolver resolver, Object key, Object entity);
+    Object save(AttributeResolver resolver, Object entity);
 
     Collection<Object> findAll(AttributeResolver resolver);
 

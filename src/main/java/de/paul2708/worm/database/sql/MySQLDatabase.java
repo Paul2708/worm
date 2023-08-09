@@ -71,7 +71,7 @@ public class MySQLDatabase implements Database {
     }
 
     @Override
-    public Object save(AttributeResolver resolver, Object key, Object entity) {
+    public Object save(AttributeResolver resolver, Object entity) {
         String sqlColumns = resolver.getColumns().stream()
                 .map(ColumnAttribute::columnName)
                 .collect(Collectors.joining(", "));
