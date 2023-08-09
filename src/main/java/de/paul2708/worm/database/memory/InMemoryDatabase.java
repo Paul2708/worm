@@ -1,8 +1,9 @@
 package de.paul2708.worm.database.memory;
 
 import de.paul2708.worm.columns.AttributeResolver;
+import de.paul2708.worm.columns.datatypes.ColumnDataType;
+import de.paul2708.worm.columns.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.Database;
-import de.paul2708.worm.database.KeyGenerator;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,7 +28,17 @@ public class InMemoryDatabase implements Database {
         System.out.printf("Prepare database for %s%n", resolver.getTable());
     }
 
-    @Override
+	@Override
+	public void registerColumnsRegistry(ColumnsRegistry registry) {
+		throw new UnsupportedOperationException("In-memory database does not support column registry");
+	}
+
+	@Override
+	public void registerDataType(ColumnDataType<?> dataType) {
+		throw new UnsupportedOperationException("In-memory database does not support column registry");
+	}
+
+	@Override
     public Object save(AttributeResolver resolver, Object key, Object entity) {
         Map<Object, Object> map = database.getOrDefault(resolver.getTargetClass(), new HashMap<>());
 
