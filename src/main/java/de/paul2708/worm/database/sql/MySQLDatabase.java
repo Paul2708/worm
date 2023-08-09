@@ -26,7 +26,7 @@ public class MySQLDatabase implements Database {
     private final String password;
 
     private DataSource dataSource;
-	private ColumnsRegistry columnsRegistry;
+    private ColumnsRegistry columnsRegistry;
 
     public MySQLDatabase(String hostname, int port, String database, String username, String password) {
         this.hostname = hostname;
@@ -44,9 +44,9 @@ public class MySQLDatabase implements Database {
             throw new RuntimeException(e);
         }
 
-		if (this.columnsRegistry == null) {
-			registerColumnsRegistry(ColumnsRegistry.create());
-		}
+        if (this.columnsRegistry == null) {
+            registerColumnsRegistry(ColumnsRegistry.create());
+        }
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl("jdbc:mysql://%s:%d/%s".formatted(hostname, port, database));
@@ -59,7 +59,7 @@ public class MySQLDatabase implements Database {
         this.dataSource = new HikariDataSource(config);
     }
 
-	@Override
+    @Override
     public void prepare(AttributeResolver resolver) {
         String sqlColumns = resolver.getColumns().stream()
                 .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
@@ -69,29 +69,29 @@ public class MySQLDatabase implements Database {
                 .formatted(resolver.getTable(), sqlColumns, resolver.getPrimaryKey().columnName());
 
         try (Connection conn = dataSource.getConnection();
-			 PreparedStatement stmt = conn.prepareStatement(query)) {
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-	@Override
-	public void registerColumnsRegistry(ColumnsRegistry registry) {
-		if (registry == null) {
-			throw new IllegalArgumentException("Registry that was provided is null");
-		}
-		this.columnsRegistry = registry;
-		this.columnsRegistry.init();
-	}
+    @Override
+    public void registerColumnsRegistry(ColumnsRegistry registry) {
+        if (registry == null) {
+            throw new IllegalArgumentException("Registry that was provided is null");
+        }
+        this.columnsRegistry = registry;
+        this.columnsRegistry.init();
+    }
 
-	@Override
-	public void registerDataType(ColumnDataType<?> dataType) {
-		if (dataType == null) {
-			throw new IllegalArgumentException("Data type that was provided is null");
-		}
-		this.columnsRegistry.register(dataType);
-	}
+    @Override
+    public void registerDataType(ColumnDataType<?> dataType) {
+        if (dataType == null) {
+            throw new IllegalArgumentException("Data type that was provided is null");
+        }
+        this.columnsRegistry.register(dataType);
+    }
 
     @Override
     public Object save(AttributeResolver resolver, Object key, Object entity) {
@@ -110,7 +110,7 @@ public class MySQLDatabase implements Database {
                 .formatted(resolver.getTable(), sqlColumns, sqlValues, sqlUpdate);
 
         try (Connection conn = dataSource.getConnection();
-			 PreparedStatement stmt = conn.prepareStatement(query)) {
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
                 setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
@@ -135,14 +135,14 @@ public class MySQLDatabase implements Database {
         String query = "SELECT * FROM %s".formatted(resolver.getTable());
 
         try (Connection conn = dataSource.getConnection();
-			 PreparedStatement stmt = conn.prepareStatement(query)) {
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             ResultSet resultSet = stmt.executeQuery();
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-				Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
+                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
 
-				Object instance = resolver.createInstance(fieldValues);
+                Object instance = resolver.createInstance(fieldValues);
                 result.add(instance);
             }
 
@@ -158,15 +158,15 @@ public class MySQLDatabase implements Database {
                 .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
         try (Connection conn = dataSource.getConnection();
-			 PreparedStatement stmt = conn.prepareStatement(query)) {
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
             ResultSet resultSet = stmt.executeQuery();
 
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-				Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
+                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
 
-				Object instance = resolver.createInstance(fieldValues);
+                Object instance = resolver.createInstance(fieldValues);
                 return Optional.of(instance);
             } else {
                 return Optional.empty();
@@ -176,13 +176,13 @@ public class MySQLDatabase implements Database {
         }
     }
 
-	@Override
+    @Override
     public void delete(AttributeResolver resolver, Object entity) {
         String query = "DELETE FROM %s WHERE %s = ?"
                 .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
         try (Connection conn = dataSource.getConnection();
-			 PreparedStatement stmt = conn.prepareStatement(query)) {
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
             stmt.execute();
         } catch (SQLException e) {
@@ -190,17 +190,17 @@ public class MySQLDatabase implements Database {
         }
     }
 
-	private Map<String, Object> getFieldValues(AttributeResolver resolver, ResultSet resultSet) {
-		Map<String, Object> fieldValues = new HashMap<>();
-		for (ColumnAttribute column : resolver.getColumns()) {
-			fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
-		}
-		return fieldValues;
-	}
+    private Map<String, Object> getFieldValues(AttributeResolver resolver, ResultSet resultSet) {
+        Map<String, Object> fieldValues = new HashMap<>();
+        for (ColumnAttribute column : resolver.getColumns()) {
+            fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
+        }
+        return fieldValues;
+    }
 
     private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
-		try {
-			return columnsRegistry.getDataType(expectedType).from(resultSet, column);
+        try {
+            return columnsRegistry.getDataType(expectedType).from(resultSet, column);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -208,14 +208,14 @@ public class MySQLDatabase implements Database {
 
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
         try {
-			columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, value);
-		} catch (SQLException e) {
+            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, value);
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     private String toSqlType(ColumnAttribute attribute) {
         Class<?> type = attribute.type();
-		return columnsRegistry.getDataType(type).getSqlType(attribute);
+        return columnsRegistry.getDataType(type).getSqlType(attribute);
     }
 }
