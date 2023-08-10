@@ -1,7 +1,8 @@
 package de.paul2708.worm.example.database;
 
 import de.paul2708.worm.database.Database;
-import de.paul2708.worm.util.UUIDConverter;
+import de.paul2708.worm.example.Car;
+import de.paul2708.worm.example.CarRepository;
 import de.paul2708.worm.example.Person;
 import de.paul2708.worm.example.PersonRepository;
 import de.paul2708.worm.repository.CrudRepository;
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 public abstract class DatabaseTest {
 
     private CrudRepository<Person, Integer> repository;
+    private CarRepository carRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -28,13 +29,15 @@ public abstract class DatabaseTest {
         emptyDatabase.connect();
 
         this.repository = Repository.create(PersonRepository.class, Person.class, emptyDatabase);
+        this.carRepository = Repository.create(CarRepository.class, Car.class, emptyDatabase);
 
         assumeTrue(repository.findAll().isEmpty());
+        assumeTrue(carRepository.findAll().isEmpty());
     }
 
     @Test
     void testBasicSave() {
-        Person person = new Person(UUID.randomUUID(), "Max", 42);
+        Person person = new Person("Max", 42);
         repository.save(person);
 
         assertEquals(1, repository.findAll().size());
@@ -42,7 +45,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testGeneratedKeyOnSave() {
-        Person person = new Person(UUID.randomUUID(), "Max", 42);
+        Person person = new Person("Max", 42);
 
         assumeTrue(person.getId() == 0);
 
@@ -52,7 +55,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testSavedAttributes() {
-        Person person = new Person(UUID.randomUUID(), "Max", 42);
+        Person person = new Person("Max", 42);
         Person savedPerson = repository.save(person);
 
         assertEquals(person.getName(), savedPerson.getName());
@@ -61,7 +64,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testFindByValidId() {
-        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
+        Person person = repository.save(new Person("Max", 42));
         int id = person.getId();
 
         Optional<Person> optionalPerson = repository.findById(id);
@@ -81,7 +84,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testUpdate() {
-        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
+        Person person = repository.save(new Person("Max", 42));
         int id = person.getId();
 
         Optional<Person> optionalPerson = repository.findById(id);
@@ -99,7 +102,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testSuccessfulDeletion() {
-        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
+        Person person = repository.save(new Person("Max", 42));
 
         assumeTrue(repository.findById(person.getId()).isPresent());
 
@@ -109,20 +112,29 @@ public abstract class DatabaseTest {
 
     @Test
     void testNonExistingDeletion() {
-        Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
+        repository.save(new Person("Max", 42));
         assumeTrue(repository.findAll().size() == 1);
 
-        int id = ThreadLocalRandom.current().nextInt(0, Integer.MAX_VALUE);
-        assumeTrue(person.getId() != id);
+        repository.delete(new Person("Max", 42));
+
+        assertEquals(1, repository.findAll().size());
     }
 
-	@Test
-	void testUuidDataType() {
-		Person person = repository.save(new Person(UUID.randomUUID(), "Max", 42));
-		assumeTrue(repository.findAll().size() == 1);
+    @Test
+    void testCarDatabase() {
+        UUID ownerId = UUID.randomUUID();
+        Car car = new Car("red", ownerId);
 
-		assumeTrue(person.getUuid() != null);
+        assumeTrue(car.id() == null);
 
-		System.out.println(person.getUuid());
-	}
+        Car savedCar = carRepository.save(car);
+        assertNotNull(savedCar.id());
+
+        Optional<Car> carOptional = carRepository.findById(savedCar.id());
+        assertTrue(carOptional.isPresent());
+
+        assertEquals(savedCar.id(), carOptional.get().id());
+        assertEquals("red", carOptional.get().color());
+        assertEquals(ownerId, carOptional.get().ownerId());
+    }
 }
