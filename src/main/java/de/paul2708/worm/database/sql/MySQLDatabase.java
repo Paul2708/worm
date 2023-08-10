@@ -4,9 +4,9 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.datatypes.ColumnDataType;
-import de.paul2708.worm.columns.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.Database;
+import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
+import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -76,7 +76,6 @@ public class MySQLDatabase implements Database {
         }
     }
 
-    @Override
     public void registerColumnsRegistry(ColumnsRegistry registry) {
         if (registry == null) {
             throw new IllegalArgumentException("Registry that was provided is null");
@@ -85,7 +84,6 @@ public class MySQLDatabase implements Database {
         this.columnsRegistry.init();
     }
 
-    @Override
     public void registerDataType(ColumnDataType<?> dataType) {
         if (dataType == null) {
             throw new IllegalArgumentException("Data type that was provided is null");

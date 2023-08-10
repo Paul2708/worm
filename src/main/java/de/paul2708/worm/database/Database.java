@@ -1,8 +1,8 @@
 package de.paul2708.worm.database;
 
 import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.datatypes.ColumnDataType;
-import de.paul2708.worm.columns.datatypes.ColumnsRegistry;
+import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
+import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -14,10 +14,6 @@ public interface Database {
     // TODO: Add disconnect
 
     void prepare(AttributeResolver resolver);
-
-	void registerColumnsRegistry(ColumnsRegistry registry);
-
-	void registerDataType(ColumnDataType<?> dataType);
 
     Object save(AttributeResolver resolver, Object key, Object entity);
 
