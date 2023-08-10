@@ -2,6 +2,7 @@ package de.paul2708.worm.database.sql.datatypes.impl;
 
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
+import de.paul2708.worm.database.sql.datatypes.UUIDConverter;
 
 import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
@@ -19,7 +20,6 @@ public final class UUIDColumnDataType implements ColumnDataType<UUID> {
     @Override
     public UUID from(ResultSet resultSet, String column) throws SQLException {
         return UUIDConverter.convert(resultSet.getBytes(column));
-
     }
 
     @Override
@@ -31,24 +31,4 @@ public final class UUIDColumnDataType implements ColumnDataType<UUID> {
     public String getSqlType(ColumnAttribute attribute) {
         return "BINARY(16)";
     }
-
-    private static final class UUIDConverter {
-
-        private UUIDConverter() {
-            throw new IllegalAccessError("Illegal access of UUIDConverter - No instantiation!");
-        }
-
-        static byte[] convert(UUID uuid) {
-            return ByteBuffer.wrap(new byte[16])
-                    .putLong(uuid.getMostSignificantBits())
-                    .putLong(uuid.getLeastSignificantBits())
-                    .array();
-        }
-
-        static UUID convert(byte[] bytes) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-            return new UUID(byteBuffer.getLong(), byteBuffer.getLong());
-        }
-    }
-
 }
