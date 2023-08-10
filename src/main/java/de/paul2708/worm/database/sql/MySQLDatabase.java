@@ -5,8 +5,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.Database;
-import de.paul2708.worm.database.sql.columns.ColumnsRegistry;
-import de.paul2708.worm.database.sql.columns.SqlColumnDataType;
+import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
+import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -26,6 +26,7 @@ public class MySQLDatabase implements Database {
     private final String password;
 
     private DataSource dataSource;
+    private ColumnsRegistry columnsRegistry;
 
     public MySQLDatabase(String hostname, int port, String database, String username, String password) {
         this.hostname = hostname;
@@ -41,6 +42,10 @@ public class MySQLDatabase implements Database {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
+        }
+
+        if (this.columnsRegistry == null) {
+            registerColumnsRegistry(ColumnsRegistry.create());
         }
 
         HikariConfig config = new HikariConfig();
@@ -63,11 +68,27 @@ public class MySQLDatabase implements Database {
         String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s))"
                 .formatted(resolver.getTable(), sqlColumns, resolver.getPrimaryKey().columnName());
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void registerColumnsRegistry(ColumnsRegistry registry) {
+        if (registry == null) {
+            throw new IllegalArgumentException("Registry that was provided is null");
+        }
+        this.columnsRegistry = registry;
+        this.columnsRegistry.init();
+    }
+
+    public void registerDataType(ColumnDataType<?> dataType) {
+        if (dataType == null) {
+            throw new IllegalArgumentException("Data type that was provided is null");
+        }
+        this.columnsRegistry.register(dataType);
     }
 
     @Override
@@ -86,7 +107,8 @@ public class MySQLDatabase implements Database {
         String query = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s"
                 .formatted(resolver.getTable(), sqlColumns, sqlValues, sqlUpdate);
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
                 setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
@@ -110,15 +132,13 @@ public class MySQLDatabase implements Database {
     public Collection<Object> findAll(AttributeResolver resolver) {
         String query = "SELECT * FROM %s".formatted(resolver.getTable());
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             ResultSet resultSet = stmt.executeQuery();
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Map<String, Object> fieldValues = new HashMap<>();
-                for (ColumnAttribute column : resolver.getColumns()) {
-                    fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
-                }
+                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
 
                 Object instance = resolver.createInstance(fieldValues);
                 result.add(instance);
@@ -135,17 +155,14 @@ public class MySQLDatabase implements Database {
         String query = "SELECT * FROM %s WHERE %s = ?"
                 .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
             ResultSet resultSet = stmt.executeQuery();
 
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                // TODO: Auslagern
-                Map<String, Object> fieldValues = new HashMap<>();
-                for (ColumnAttribute column : resolver.getColumns()) {
-                    fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
-                }
+                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
 
                 Object instance = resolver.createInstance(fieldValues);
                 return Optional.of(instance);
@@ -162,7 +179,8 @@ public class MySQLDatabase implements Database {
         String query = "DELETE FROM %s WHERE %s = ?"
                 .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
-        try (Connection conn = dataSource.getConnection(); PreparedStatement stmt = conn.prepareStatement(query)) {
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
             setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
             stmt.execute();
         } catch (SQLException e) {
@@ -170,35 +188,32 @@ public class MySQLDatabase implements Database {
         }
     }
 
+    private Map<String, Object> getFieldValues(AttributeResolver resolver, ResultSet resultSet) {
+        Map<String, Object> fieldValues = new HashMap<>();
+        for (ColumnAttribute column : resolver.getColumns()) {
+            fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
+        }
+        return fieldValues;
+    }
+
     private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
-		try {
-			if (ColumnsRegistry.getColumnDataType(expectedType) instanceof SqlColumnDataType<?> dataType) {
-				return dataType.getValue(resultSet, column);
-			}
+        try {
+            return columnsRegistry.getDataType(expectedType).from(resultSet, column);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-        return null;
     }
 
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
         try {
-			if (ColumnsRegistry.getColumnDataType(expectedType) instanceof SqlColumnDataType dataType) {
-				dataType.setValue(statement, index, value);
-			}
-		} catch (SQLException e) {
+            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, value);
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
     private String toSqlType(ColumnAttribute attribute) {
         Class<?> type = attribute.type();
-
-		if (ColumnsRegistry.getColumnDataType(type) instanceof SqlColumnDataType dataType) {
-			return dataType.toSqlType(attribute);
-		}
-
-        throw new IllegalArgumentException("Could not find a SQL type for %s".formatted(type.getName()));
+        return columnsRegistry.getDataType(type).getSqlType(attribute);
     }
 }

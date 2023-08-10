@@ -1,6 +1,8 @@
 package de.paul2708.worm.database;
 
 import de.paul2708.worm.columns.AttributeResolver;
+import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
+import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import java.util.Collection;
 import java.util.Optional;
