@@ -1,8 +1,7 @@
 package de.paul2708.worm.example.database;
 
 import de.paul2708.worm.database.Database;
-import de.paul2708.worm.database.sql.datatypes.UUIDConverter;
-import de.paul2708.worm.database.sql.datatypes.impl.UUIDColumnDataType;
+import de.paul2708.worm.util.UUIDConverter;
 import de.paul2708.worm.example.Person;
 import de.paul2708.worm.example.PersonRepository;
 import de.paul2708.worm.repository.CrudRepository;
@@ -126,15 +125,4 @@ public abstract class DatabaseTest {
 
 		System.out.println(person.getUuid());
 	}
-
-    @Test
-    void testUuidConverter() {
-        final String NAME = "cd15f5df-ab7d-4196-8edf-21199cd5ce7f";
-
-        byte[] bytes = UUIDConverter.convert(UUID.fromString(NAME));
-        assumeTrue(bytes.length == 16);
-
-        UUID uuid = UUIDConverter.convert(bytes);
-        assumeTrue(uuid.toString().equals(NAME));
-    }
 }

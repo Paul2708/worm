@@ -1,4 +1,4 @@
-package de.paul2708.worm.database.sql.datatypes;
+package de.paul2708.worm.util;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;

@@ -2,9 +2,8 @@ package de.paul2708.worm.database.sql.datatypes.impl;
 
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
-import de.paul2708.worm.database.sql.datatypes.UUIDConverter;
+import de.paul2708.worm.util.UUIDConverter;
 
-import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
