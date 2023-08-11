@@ -1,10 +1,7 @@
 package de.paul2708.worm.example.database;
 
 import de.paul2708.worm.database.Database;
-import de.paul2708.worm.example.Car;
-import de.paul2708.worm.example.CarRepository;
-import de.paul2708.worm.example.Person;
-import de.paul2708.worm.example.PersonRepository;
+import de.paul2708.worm.example.*;
 import de.paul2708.worm.repository.CrudRepository;
 import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +17,7 @@ public abstract class DatabaseTest {
 
     private CrudRepository<Person, Integer> repository;
     private CarRepository carRepository;
+    private FleetRepository fleetRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -30,9 +28,11 @@ public abstract class DatabaseTest {
 
         this.repository = Repository.create(PersonRepository.class, Person.class, emptyDatabase);
         this.carRepository = Repository.create(CarRepository.class, Car.class, emptyDatabase);
+        this.fleetRepository = Repository.create(FleetRepository.class, Fleet.class, emptyDatabase);
 
         assumeTrue(repository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
+        assumeTrue(fleetRepository.findAll().isEmpty());
     }
 
     @Test
@@ -136,5 +136,26 @@ public abstract class DatabaseTest {
         assertEquals(savedCar.id(), carOptional.get().id());
         assertEquals("red", carOptional.get().color());
         assertEquals(ownerId, carOptional.get().ownerId());
+    }
+
+    @Test
+    void testForeignKey() {
+        // TODO: Separate and extend test cases
+        assumeTrue(repository.findAll().isEmpty());
+
+        Fleet fleet = fleetRepository.save(new Fleet("My Fleet", new Person("Max", 42)));
+
+        assertEquals("Max", fleet.getPerson().getName());
+        assertEquals(42, fleet.getPerson().getAge());
+        assertNotEquals(0, fleet.getPerson().getId());
+
+        assertFalse(repository.findAll().isEmpty());
+        Optional<Person> optionalPerson = repository.findById(fleet.getPerson().getId());
+        assertTrue(optionalPerson.isPresent());
+        Person person = optionalPerson.get();
+
+        assertEquals("Max", person.getName());
+        assertEquals(42, person.getAge());
+        assertEquals(fleet.getPerson().getId(), person.getId());
     }
 }
