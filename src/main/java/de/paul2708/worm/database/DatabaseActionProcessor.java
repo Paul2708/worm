@@ -82,17 +82,6 @@ public class DatabaseActionProcessor {
         throw new IllegalArgumentException("Did not handle database action %s".formatted(action.getClass().getName()));
     }
 
-    private void setField(String fieldName, Object object, Object value) {
-        try {
-            Field field = object.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-
-            field.set(object, value);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private Object getField(String fieldName, Object object) {
         try {
             Field field = object.getClass().getDeclaredField(fieldName);

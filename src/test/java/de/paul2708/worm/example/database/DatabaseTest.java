@@ -97,6 +97,7 @@ public abstract class DatabaseTest {
         repository.save(existingPerson);
 
         assertEquals(1, repository.findAll().size());
+        assertTrue(repository.findById(existingPerson.getId()).isPresent());
         assertEquals("Paul", repository.findById(existingPerson.getId()).get().getName());
     }
 

@@ -5,6 +5,10 @@ import java.lang.reflect.Field;
 public final class DefaultValueChecker {
 
     public static boolean isDefaultValue(Object object, Field field) {
+        if (field == null) {
+            throw new IllegalArgumentException();
+        }
+
         Class<?> clazz = field.getType();
         Object value;
         try {

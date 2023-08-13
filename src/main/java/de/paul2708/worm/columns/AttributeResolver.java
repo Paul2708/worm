@@ -55,7 +55,7 @@ public class AttributeResolver {
 
     public List<ColumnAttribute> getForeignKeys() {
         return getColumns().stream()
-                .filter(column -> !column.isForeignKey())
+                .filter(ColumnAttribute::isForeignKey)
                 .sorted()
                 .toList();
     }
