@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public abstract class DatabaseTest {
@@ -141,10 +142,10 @@ public abstract class DatabaseTest {
     @Test
     void testBooleanDataType() {
         Person person = repository.save(new Person("Max", 42));
-        assumeTrue(!person.isBlocked());
+        assumeFalse(person.isBlocked());
 
         person.setBlocked(true);
         repository.save(person);
-        assumeTrue(person.isBlocked());
+        assertTrue(repository.findById(person.getId()).get().isBlocked());
     }
 }
