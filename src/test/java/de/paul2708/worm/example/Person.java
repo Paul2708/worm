@@ -18,6 +18,9 @@ public class Person {
     @Column("age")
     private int age;
 
+    @Column("blocked")
+    private boolean blocked;
+
     public Person() {
 
     }
@@ -41,6 +44,14 @@ public class Person {
 
     public int getAge() {
         return age;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
     }
 
     @Override
