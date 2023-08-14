@@ -137,4 +137,14 @@ public abstract class DatabaseTest {
         assertEquals("red", carOptional.get().color());
         assertEquals(ownerId, carOptional.get().ownerId());
     }
+
+    @Test
+    void booleanDataType() {
+        Person person = repository.save(new Person("Max", 42));
+        assumeTrue(!person.isBlocked());
+
+        person.setBlocked(true);
+        repository.save(person);
+        assumeTrue(person.isBlocked());
+    }
 }
