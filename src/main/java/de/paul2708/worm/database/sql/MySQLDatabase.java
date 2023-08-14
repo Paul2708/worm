@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
@@ -65,8 +66,24 @@ public class MySQLDatabase implements Database {
                 .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
-        String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s))"
+        String foreignKeyReferences = resolver.getForeignKeys().stream()
+                .map(column -> {
+                    String table = column.getProperty(ForeignKeyProperty.class).getForeignTable();
+                    String primaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().columnName();
+
+                    return "FOREIGN KEY (%s) REFERENCES %s(%s)"
+                            .formatted(column.columnName(), table, primaryKey);
+                })
+                .collect(Collectors.joining(", "));
+
+        String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s)"
                 .formatted(resolver.getTable(), sqlColumns, resolver.getPrimaryKey().columnName());
+
+        if (!resolver.getForeignKeys().isEmpty()) {
+            query += ", %s".formatted(foreignKeyReferences) + ")";
+        } else {
+            query += ")";
+        }
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
