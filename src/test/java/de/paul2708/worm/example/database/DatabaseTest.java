@@ -139,7 +139,7 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void booleanDataType() {
+    void testBooleanDataType() {
         Person person = repository.save(new Person("Max", 42));
         assumeTrue(!person.isBlocked());
 
