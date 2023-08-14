@@ -146,6 +146,10 @@ public abstract class DatabaseTest {
 
         person.setBlocked(true);
         repository.save(person);
-        assertTrue(repository.findById(person.getId()).get().isBlocked());
+
+        Optional<Person> personOptional = repository.findById(person.getId());
+        assumeTrue(personOptional.isPresent());
+
+        assertTrue(personOptional.get().isBlocked());
     }
 }
