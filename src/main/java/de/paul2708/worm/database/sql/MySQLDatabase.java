@@ -128,11 +128,11 @@ public class MySQLDatabase implements Database {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
-                setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
+                setValue(stmt, index, column, entity);
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-                setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
+                setValue(stmt, index, column, entity);
                 index++;
             }
 
@@ -226,6 +226,17 @@ public class MySQLDatabase implements Database {
             columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, value);
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void setValue(PreparedStatement statement, int index, ColumnAttribute column, Object entity) {
+        if (column.isForeignKey()) {
+            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey();
+            Object value = foreignPrimaryKey.getValue(column.getValue(entity));
+
+            setValue(statement, value.getClass(), index, value);
+        } else {
+            setValue(statement, column.type(), index, column.getValue(entity));
         }
     }
 
