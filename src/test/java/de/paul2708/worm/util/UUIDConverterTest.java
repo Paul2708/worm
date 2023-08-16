@@ -1,4 +1,4 @@
-package de.paul2708.worm.example.util;
+package de.paul2708.worm.util;
 
 import de.paul2708.worm.util.UUIDConverter;
 import org.junit.jupiter.api.Test;

@@ -1,9 +1,9 @@
-package de.paul2708.worm.example.database.sql;
+package de.paul2708.worm.database.sql;
 
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
-import de.paul2708.worm.example.Person;
+import de.paul2708.worm.Person;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

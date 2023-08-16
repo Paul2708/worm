@@ -1,9 +1,7 @@
-package de.paul2708.worm.example.columns;
+package de.paul2708.worm.columns;
 
-import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.example.Fleet;
-import de.paul2708.worm.example.Person;
+import de.paul2708.worm.Fleet;
+import de.paul2708.worm.Person;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

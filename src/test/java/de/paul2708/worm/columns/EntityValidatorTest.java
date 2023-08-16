@@ -1,12 +1,9 @@
-package de.paul2708.worm.example.columns;
+package de.paul2708.worm.columns;
 
-import de.paul2708.worm.columns.Column;
-import de.paul2708.worm.columns.PrimaryKey;
-import de.paul2708.worm.columns.Table;
 import de.paul2708.worm.columns.validator.EntityValidator;
 import de.paul2708.worm.columns.validator.InvalidEntityException;
-import de.paul2708.worm.example.Car;
-import de.paul2708.worm.example.Person;
+import de.paul2708.worm.Car;
+import de.paul2708.worm.Person;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;

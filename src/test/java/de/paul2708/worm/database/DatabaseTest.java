@@ -1,7 +1,6 @@
-package de.paul2708.worm.example.database;
+package de.paul2708.worm.database;
 
-import de.paul2708.worm.database.Database;
-import de.paul2708.worm.example.*;
+import de.paul2708.worm.*;
 import de.paul2708.worm.repository.CrudRepository;
 import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;

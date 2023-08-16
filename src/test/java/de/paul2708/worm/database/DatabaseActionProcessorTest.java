@@ -1,4 +1,4 @@
-package de.paul2708.worm.example.database;
+package de.paul2708.worm.database;
 
 import de.paul2708.worm.columns.*;
 import de.paul2708.worm.columns.generator.ValueGenerator;
