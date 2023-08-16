@@ -3,6 +3,8 @@ package de.paul2708.worm.example;
 import de.paul2708.worm.columns.*;
 import de.paul2708.worm.columns.generator.IntegerGenerator;
 
+import java.util.Objects;
+
 @Table("persons")
 public class Person {
 
@@ -31,7 +33,7 @@ public class Person {
         return id;
     }
 
-	public void setName(String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -41,6 +43,19 @@ public class Person {
 
     public int getAge() {
         return age;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        Person person = (Person) object;
+        return id == person.id && age == person.age && Objects.equals(name, person.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, age);
     }
 
     @Override

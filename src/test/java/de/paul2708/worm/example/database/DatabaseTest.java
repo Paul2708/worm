@@ -92,7 +92,6 @@ public abstract class DatabaseTest {
 
         Person existingPerson = optionalPerson.get();
         existingPerson.setName("Paul");
-        System.out.println(existingPerson.getId());
 
         repository.save(existingPerson);
 
@@ -150,6 +149,7 @@ public abstract class DatabaseTest {
         assertEquals(42, fleet.getPerson().getAge());
         assertNotEquals(0, fleet.getPerson().getId());
 
+        // Test stored person
         assertFalse(repository.findAll().isEmpty());
         Optional<Person> optionalPerson = repository.findById(fleet.getPerson().getId());
         assertTrue(optionalPerson.isPresent());
@@ -158,5 +158,14 @@ public abstract class DatabaseTest {
         assertEquals("Max", person.getName());
         assertEquals(42, person.getAge());
         assertEquals(fleet.getPerson().getId(), person.getId());
+
+        // Test stored person in fleet
+        Optional<Fleet> optionalFleet = fleetRepository.findById(fleet.getId());
+        assertFalse(fleetRepository.findAll().isEmpty());
+        assertTrue(optionalFleet.isPresent());
+        Fleet restoredFleet = optionalFleet.get();
+
+        assertNotNull(restoredFleet.getPerson());
+        assertEquals(person, restoredFleet.getPerson());
     }
 }
