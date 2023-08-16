@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EntityCreator {
+public final class EntityCreator {
 
     public static Object fromColumns(Class<?> entityClass, ColumnsRegistry registry, ResultSet resultSet) {
         AttributeResolver resolver = new AttributeResolver(entityClass);
@@ -18,14 +18,7 @@ public class EntityCreator {
 
         // Create foreign key objects
         for (ColumnAttribute foreignKey : resolver.getForeignKeys()) {
-            AttributeResolver foreignResolver = new AttributeResolver(foreignKey.type());
-
-            Map<String, Object> fieldValues = new HashMap<>();
-            for (ColumnAttribute column : foreignResolver.getColumns()) {
-                fieldValues.put(column.fieldName(), getValue(resultSet, registry, column.getFullColumnName(), column.type()));
-            }
-
-            foreignFields.put(foreignKey.fieldName(), foreignResolver.createInstance(fieldValues));
+            foreignFields.put(foreignKey.fieldName(), fromColumns(foreignKey.type(), registry, resultSet));
         }
 
         Map<String, Object> fieldValues = new HashMap<>();
