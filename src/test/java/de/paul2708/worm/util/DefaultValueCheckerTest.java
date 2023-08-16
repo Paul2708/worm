@@ -1,6 +1,5 @@
 package de.paul2708.worm.util;
 
-import de.paul2708.worm.util.DefaultValueChecker;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
