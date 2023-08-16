@@ -8,6 +8,7 @@ import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
+import de.paul2708.worm.database.sql.helper.EntityCreator;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -169,25 +170,58 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Optional<Object> findById(AttributeResolver resolver, Object key) {
-        String query = "SELECT * FROM %s WHERE %s = ?"
-                .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
+        if (resolver.getForeignKeys().isEmpty()) {
+            String query = "SELECT * FROM %s WHERE %s = ?"
+                    .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
-            ResultSet resultSet = stmt.executeQuery();
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(query)) {
+                setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
+                ResultSet resultSet = stmt.executeQuery();
 
-            // TODO: Handle multiple responses, throw error
-            if (resultSet.next()) {
-                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
+                // TODO: Handle multiple responses, throw error
+                if (resultSet.next()) {
+                    Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
 
-                Object instance = resolver.createInstance(fieldValues);
-                return Optional.of(instance);
-            } else {
-                return Optional.empty();
+                    Object instance = resolver.createInstance(fieldValues);
+                    return Optional.of(instance);
+                } else {
+                    return Optional.empty();
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } else {
+            String tables = resolver.getTable() + ", ";
+            tables += resolver.getForeignKeys().stream()
+                    .map(column -> column.getProperty(ForeignKeyProperty.class).getForeignTable())
+                    .collect(Collectors.joining(", "));
+
+            String conditions = resolver.getForeignKeys().stream()
+                    .map(column -> column.getFullColumnName() + " = " + column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().getFullColumnName())
+                    .collect(Collectors.joining(" AND "));
+
+            String query = "SELECT * FROM %s WHERE %s = ? AND %s"
+                    .formatted(tables, resolver.getPrimaryKey().getFullColumnName(), conditions);
+
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(query)) {
+                setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
+
+                System.out.println(stmt);
+
+                ResultSet resultSet = stmt.executeQuery();
+
+                // TODO: Handle multiple responses, throw error
+                if (resultSet.next()) {
+                    Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
+                    return Optional.of(instance);
+                } else {
+                    return Optional.empty();
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
