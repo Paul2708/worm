@@ -148,23 +148,53 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Collection<Object> findAll(AttributeResolver resolver) {
-        String query = "SELECT * FROM %s".formatted(resolver.getTable());
+        if (resolver.getForeignKeys().isEmpty()) {
+            String query = "SELECT * FROM %s".formatted(resolver.getTable());
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            ResultSet resultSet = stmt.executeQuery();
-            List<Object> result = new ArrayList<>();
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(query)) {
+                ResultSet resultSet = stmt.executeQuery();
+                List<Object> result = new ArrayList<>();
 
-            while (resultSet.next()) {
-                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
+                while (resultSet.next()) {
+                    Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
 
-                Object instance = resolver.createInstance(fieldValues);
-                result.add(instance);
+                    Object instance = resolver.createInstance(fieldValues);
+                    result.add(instance);
+                }
+
+                return result;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
+        } else {
+            String tables = resolver.getTable() + ", ";
+            tables += resolver.getForeignKeys().stream()
+                    .map(column -> column.getProperty(ForeignKeyProperty.class).getForeignTable())
+                    .collect(Collectors.joining(", "));
 
-            return result;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            String conditions = resolver.getForeignKeys().stream()
+                    .map(column -> column.getFullColumnName() + " = " + column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().getFullColumnName())
+                    .collect(Collectors.joining(" AND "));
+
+            String query = "SELECT * FROM %s WHERE %s"
+                    .formatted(tables, conditions);
+
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(query)) {
+                ResultSet resultSet = stmt.executeQuery();
+
+                List<Object> result = new ArrayList<>();
+
+                while (resultSet.next()) {
+                    Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
+                    result.add(instance);
+                }
+
+                return result;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

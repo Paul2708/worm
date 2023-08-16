@@ -41,6 +41,10 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
         return type;
     }
 
+    public String getFullColumnName() {
+        return "%s.%s".formatted(new AttributeResolver(entityClass).getTable(), columnName);
+    }
+
     public Field getField() {
         try {
             Field field = entityClass.getDeclaredField(fieldName);
