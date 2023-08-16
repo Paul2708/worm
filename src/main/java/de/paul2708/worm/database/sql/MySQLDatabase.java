@@ -148,24 +148,12 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Collection<Object> findAll(AttributeResolver resolver) {
-        // Build tables
-        String tables = resolver.getTable();
-        if (!resolver.getForeignKeys().isEmpty()) {
-            tables += ", ";
-            tables += resolver.getForeignKeys().stream()
-                    .map(column -> column.getProperty(ForeignKeyProperty.class).getForeignTable())
-                    .collect(Collectors.joining(", "));
-        }
-
-        // Build conditions
-        String conditions = resolver.getForeignKeys().stream()
-                .map(column -> column.getFullColumnName() + " = " + column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().getFullColumnName())
-                .collect(Collectors.joining(" AND "));
-
         // Build query
         String query = "SELECT * FROM %s%s"
-                .formatted(tables, resolver.getForeignKeys().isEmpty() ? "" : " WHERE " + conditions);
+                .formatted(resolver.getFormattedTableNames(),
+                        resolver.getForeignKeys().isEmpty() ? "" : " WHERE " + buildConditions(resolver));
 
+        // Query database
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             ResultSet resultSet = stmt.executeQuery();
@@ -185,58 +173,27 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Optional<Object> findById(AttributeResolver resolver, Object key) {
-        if (resolver.getForeignKeys().isEmpty()) {
-            String query = "SELECT * FROM %s WHERE %s = ?"
-                    .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
+        // Build query
+        String query = "SELECT * FROM %s WHERE %s = ?%s"
+                .formatted(resolver.getFormattedTableNames(), resolver.getPrimaryKey().getFullColumnName(),
+                        resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query)) {
-                setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
-                ResultSet resultSet = stmt.executeQuery();
+        // Query database
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
 
-                // TODO: Handle multiple responses, throw error
-                if (resultSet.next()) {
-                    Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
+            ResultSet resultSet = stmt.executeQuery();
 
-                    Object instance = resolver.createInstance(fieldValues);
-                    return Optional.of(instance);
-                } else {
-                    return Optional.empty();
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+            // TODO: Handle multiple responses, throw error
+            if (resultSet.next()) {
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
+                return Optional.of(instance);
+            } else {
+                return Optional.empty();
             }
-        } else {
-            String tables = resolver.getTable() + ", ";
-            tables += resolver.getForeignKeys().stream()
-                    .map(column -> column.getProperty(ForeignKeyProperty.class).getForeignTable())
-                    .collect(Collectors.joining(", "));
-
-            String conditions = resolver.getForeignKeys().stream()
-                    .map(column -> column.getFullColumnName() + " = " + column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().getFullColumnName())
-                    .collect(Collectors.joining(" AND "));
-
-            String query = "SELECT * FROM %s WHERE %s = ? AND %s"
-                    .formatted(tables, resolver.getPrimaryKey().getFullColumnName(), conditions);
-
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query)) {
-                setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
-
-                System.out.println(stmt);
-
-                ResultSet resultSet = stmt.executeQuery();
-
-                // TODO: Handle multiple responses, throw error
-                if (resultSet.next()) {
-                    Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
-                    return Optional.of(instance);
-                } else {
-                    return Optional.empty();
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -254,20 +211,14 @@ public class MySQLDatabase implements Database {
         }
     }
 
-    private Map<String, Object> getFieldValues(AttributeResolver resolver, ResultSet resultSet) {
-        Map<String, Object> fieldValues = new HashMap<>();
-        for (ColumnAttribute column : resolver.getColumns()) {
-            fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
-        }
-        return fieldValues;
-    }
-
-    private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
-        try {
-            return columnsRegistry.getDataType(expectedType).from(resultSet, column);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+    private String buildConditions(AttributeResolver resolver) {
+        return resolver.getForeignKeys().stream()
+                .map(column -> {
+                    String fullColumnName = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey()
+                            .getFullColumnName();
+                    return column.getFullColumnName() + " = " + fullColumnName;
+                })
+                .collect(Collectors.joining(" AND "));
     }
 
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {

@@ -2,6 +2,7 @@ package de.paul2708.worm.example.columns;
 
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.example.Fleet;
 import de.paul2708.worm.example.Person;
 import org.junit.jupiter.api.Test;
 
@@ -46,5 +47,15 @@ public class AttributeResolverTest {
 
         assertEquals("age", columns.get(0).columnName());
         assertEquals("name", columns.get(1).columnName());
+    }
+
+    @Test
+    void testFormattedTableName() {
+        assertEquals("persons", resolver.getFormattedTableNames());
+    }
+
+    @Test
+    void testFormattedTableNames() {
+        assertEquals("fleets, persons", new AttributeResolver(Fleet.class).getFormattedTableNames());
     }
 }

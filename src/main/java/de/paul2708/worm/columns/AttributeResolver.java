@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class AttributeResolver {
 
@@ -58,6 +59,19 @@ public class AttributeResolver {
                 .filter(ColumnAttribute::isForeignKey)
                 .sorted()
                 .toList();
+    }
+
+    public String getFormattedTableNames() {
+        String tables = getTable();
+
+        if (!getForeignKeys().isEmpty()) {
+            tables += ", ";
+            tables += getForeignKeys().stream()
+                    .map(column -> column.getProperty(ForeignKeyProperty.class).getForeignTable())
+                    .collect(Collectors.joining(", "));
+        }
+
+        return tables;
     }
 
     private ColumnAttribute mapFieldToColumnAttribute(Field field) {

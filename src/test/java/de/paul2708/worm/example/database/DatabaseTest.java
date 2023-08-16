@@ -140,29 +140,31 @@ public abstract class DatabaseTest {
 
     @Test
     void testForeignKey() {
-        // TODO: Separate and extend test cases
         assumeTrue(repository.findAll().isEmpty());
 
+        // Save fleet
         Fleet fleet = fleetRepository.save(new Fleet("My Fleet", new Person("Max", 42)));
 
         assertEquals("Max", fleet.getPerson().getName());
         assertEquals(42, fleet.getPerson().getAge());
         assertNotEquals(0, fleet.getPerson().getId());
 
-        // Test stored person
+        // Test saved person
         assertFalse(repository.findAll().isEmpty());
         Optional<Person> optionalPerson = repository.findById(fleet.getPerson().getId());
         assertTrue(optionalPerson.isPresent());
+
         Person person = optionalPerson.get();
 
         assertEquals("Max", person.getName());
         assertEquals(42, person.getAge());
         assertEquals(fleet.getPerson().getId(), person.getId());
 
-        // Test stored person in fleet
-        Optional<Fleet> optionalFleet = fleetRepository.findById(fleet.getId());
+        // Test saved person in fleet
         assertFalse(fleetRepository.findAll().isEmpty());
+        Optional<Fleet> optionalFleet = fleetRepository.findById(fleet.getId());
         assertTrue(optionalFleet.isPresent());
+
         Fleet restoredFleet = optionalFleet.get();
 
         assertNotNull(restoredFleet.getPerson());
