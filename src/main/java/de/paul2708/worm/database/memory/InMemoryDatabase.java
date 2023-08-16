@@ -18,12 +18,12 @@ public class InMemoryDatabase implements Database {
 
     @Override
     public void connect() {
-        System.out.println("Create local in-memory database.");
+        // Nothing to do here
     }
 
     @Override
     public void prepare(AttributeResolver resolver) {
-        System.out.printf("Prepare database for %s%n", resolver.getTable());
+        // Nothing to do here
     }
 
     @Override
