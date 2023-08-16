@@ -1,5 +1,6 @@
 package de.paul2708.worm.database.sql.datatypes;
 
+import de.paul2708.worm.database.sql.datatypes.impl.BooleanColumnDataType;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.datatypes.impl.IntegerColumnDataType;
@@ -21,6 +22,7 @@ final class DefaultColumnRegistry implements ColumnsRegistry {
     public void init() {
         dataTypes.clear(); // reset to prevent exception when reloading (See #register)
 
+        register(new BooleanColumnDataType());
         register(new IntegerColumnDataType());
         register(new StringColumnDataType());
         register(new UUIDColumnDataType());

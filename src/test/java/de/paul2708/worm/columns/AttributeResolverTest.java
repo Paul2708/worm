@@ -24,11 +24,12 @@ public class AttributeResolverTest {
 
     @Test
     void testColumnsOrder() {
-        assertEquals(3, resolver.getColumns().size());
+        assertEquals(4, resolver.getColumns().size());
 
         assertEquals("id", resolver.getColumns().get(0).columnName());
         assertEquals("age", resolver.getColumns().get(1).columnName());
-        assertEquals("name", resolver.getColumns().get(2).columnName());
+        assertEquals("blocked", resolver.getColumns().get(2).columnName());
+        assertEquals("name", resolver.getColumns().get(3).columnName());
     }
 
     @Test
@@ -41,10 +42,11 @@ public class AttributeResolverTest {
     void testColumnsWithoutPrimaryKey() {
         List<ColumnAttribute> columns = resolver.getColumnsWithoutPrimaryKey();
 
-        assertEquals(2, columns.size());
+        assertEquals(3, columns.size());
 
         assertEquals("age", columns.get(0).columnName());
-        assertEquals("name", columns.get(1).columnName());
+        assertEquals("blocked", columns.get(1).columnName());
+        assertEquals("name", columns.get(2).columnName());
     }
 
     @Test

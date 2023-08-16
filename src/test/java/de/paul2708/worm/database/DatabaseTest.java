@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public abstract class DatabaseTest {
@@ -135,6 +136,20 @@ public abstract class DatabaseTest {
         assertEquals(savedCar.id(), carOptional.get().id());
         assertEquals("red", carOptional.get().color());
         assertEquals(ownerId, carOptional.get().ownerId());
+    }
+
+    @Test
+    void testBooleanDataType() {
+        Person person = repository.save(new Person("Max", 42));
+        assumeFalse(person.isBlocked());
+
+        person.setBlocked(true);
+        repository.save(person);
+
+        Optional<Person> personOptional = repository.findById(person.getId());
+        assumeTrue(personOptional.isPresent());
+
+        assertTrue(personOptional.get().isBlocked());
     }
 
     @Test
