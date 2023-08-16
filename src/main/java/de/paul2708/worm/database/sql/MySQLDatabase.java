@@ -148,53 +148,38 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Collection<Object> findAll(AttributeResolver resolver) {
-        if (resolver.getForeignKeys().isEmpty()) {
-            String query = "SELECT * FROM %s".formatted(resolver.getTable());
-
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query)) {
-                ResultSet resultSet = stmt.executeQuery();
-                List<Object> result = new ArrayList<>();
-
-                while (resultSet.next()) {
-                    Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
-
-                    Object instance = resolver.createInstance(fieldValues);
-                    result.add(instance);
-                }
-
-                return result;
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            String tables = resolver.getTable() + ", ";
+        // Build tables
+        String tables = resolver.getTable();
+        if (!resolver.getForeignKeys().isEmpty()) {
+            tables += ", ";
             tables += resolver.getForeignKeys().stream()
                     .map(column -> column.getProperty(ForeignKeyProperty.class).getForeignTable())
                     .collect(Collectors.joining(", "));
+        }
 
-            String conditions = resolver.getForeignKeys().stream()
-                    .map(column -> column.getFullColumnName() + " = " + column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().getFullColumnName())
-                    .collect(Collectors.joining(" AND "));
+        // Build conditions
+        String conditions = resolver.getForeignKeys().stream()
+                .map(column -> column.getFullColumnName() + " = " + column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().getFullColumnName())
+                .collect(Collectors.joining(" AND "));
 
-            String query = "SELECT * FROM %s WHERE %s"
-                    .formatted(tables, conditions);
+        // Build query
+        String query = "SELECT * FROM %s%s"
+                .formatted(tables, resolver.getForeignKeys().isEmpty() ? "" : " WHERE " + conditions);
 
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query)) {
-                ResultSet resultSet = stmt.executeQuery();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            ResultSet resultSet = stmt.executeQuery();
 
-                List<Object> result = new ArrayList<>();
+            List<Object> result = new ArrayList<>();
 
-                while (resultSet.next()) {
-                    Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
-                    result.add(instance);
-                }
-
-                return result;
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+            while (resultSet.next()) {
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
+                result.add(instance);
             }
+
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
