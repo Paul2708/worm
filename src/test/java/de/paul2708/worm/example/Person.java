@@ -21,6 +21,10 @@ public class Person {
     @Column("blocked")
     private boolean blocked;
 
+    @Column("image")
+    @MaxLength(255)
+    private byte[] image = new byte[255];
+
     public Person() {
 
     }
@@ -52,6 +56,14 @@ public class Person {
 
     public void setBlocked(boolean blocked) {
         this.blocked = blocked;
+    }
+
+    public byte[] getImage() {
+        return image;
+    }
+
+    public void setImage(byte[] image) {
+        this.image = image;
     }
 
     @Override

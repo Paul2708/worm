@@ -1,9 +1,6 @@
 package de.paul2708.worm.database.sql.datatypes;
 
-import de.paul2708.worm.database.sql.datatypes.impl.BooleanColumnDataType;
-import de.paul2708.worm.database.sql.datatypes.impl.IntegerColumnDataType;
-import de.paul2708.worm.database.sql.datatypes.impl.StringColumnDataType;
-import de.paul2708.worm.database.sql.datatypes.impl.UUIDColumnDataType;
+import de.paul2708.worm.database.sql.datatypes.impl.*;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -21,6 +18,7 @@ final class DefaultColumnRegistry implements ColumnsRegistry {
         dataTypes.clear(); // reset to prevent exception when reloading (See #register)
 
         register(new BooleanColumnDataType());
+        register(new ByteArrayColumnDataType());
         register(new IntegerColumnDataType());
         register(new StringColumnDataType());
         register(new UUIDColumnDataType());
