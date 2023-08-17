@@ -152,4 +152,43 @@ public abstract class DatabaseTest {
 
         assertTrue(personOptional.get().isBlocked());
     }
+
+    @Test
+    void testColumnMaxLength() {
+        Person person = repository.save(new Person("Max", 42));
+        assumeTrue(person.getName().length() <= 255);
+
+        assertThrows(IllegalStateException.class, () -> {
+            person.setName("a".repeat(256));
+            repository.save(person);
+        });
+
+        Optional<Person> personOptional = repository.findById(person.getId());
+        assumeTrue(personOptional.isPresent());
+
+        assertEquals("Max", personOptional.get().getName());
+    }
+
+    @Test
+    void testByteArray() {
+        Person person = repository.save(new Person("Max", 42));
+
+        // Fill random bytes into the array
+        for (int i = 0; i < 255; i++) {
+            byte random = (byte) (Math.random() * 255);
+            person.getImage()[i] = random;
+        }
+
+        repository.save(person);
+
+        Optional<Person> personOptional = repository.findById(person.getId());
+        assumeTrue(personOptional.isPresent());
+
+        assertEquals(255, personOptional.get().getImage().length);
+
+        assertThrows(IllegalStateException.class, () -> {
+            person.setImage(new byte[256]);
+            repository.save(person);
+        });
+    }
 }
