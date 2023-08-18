@@ -2,6 +2,7 @@ package de.paul2708.worm.columns;
 
 import de.paul2708.worm.columns.properties.*;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,6 +97,10 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
         }
 
         return null;
+    }
+
+    public boolean hasAnnotation(Class<? extends Annotation> annotationClass) {
+        return getField().isAnnotationPresent(annotationClass);
     }
 
     public boolean hasMaximumLength() {

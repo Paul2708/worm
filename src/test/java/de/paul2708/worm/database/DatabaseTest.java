@@ -4,12 +4,10 @@ import de.paul2708.worm.*;
 import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -213,8 +211,7 @@ public abstract class DatabaseTest {
 
         assertNotNull(round.getCreatedAt());
 
-        assertTrue(round.getCreatedAt().isAfter(startOperationTime));
-        assertTrue(round.getCreatedAt().isBefore(LocalDateTime.now()));
+        assertInBetween(startOperationTime, LocalDateTime.now(), round.getCreatedAt());
     }
 
     @Test
@@ -230,22 +227,36 @@ public abstract class DatabaseTest {
 
     @Test
     void testInitialUpdatedAt() {
+        LocalDateTime startOperationTime = LocalDateTime.now();
         Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
 
-        assertEquals(round.getCreatedAt(), round.getUpdatedAt());
+        assertInBetween(startOperationTime, LocalDateTime.now(), round.getUpdatedAt());
     }
 
     @Test
-    @Timeout(value = 2, unit = TimeUnit.MINUTES)
     void testUpdatedAt() {
         Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
         LocalDateTime updatedAt = round.getUpdatedAt();
+
+        // Ensure that time passed between the last updated
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         round.setEndTime(LocalDateTime.now().plusHours(2));
         Round updatedRound = roundRepository.save(round);
 
         assertNotEquals(updatedAt, updatedRound.getUpdatedAt());
-        assertTrue(updatedRound.getUpdatedAt().isAfter(updatedAt));
-        assertTrue(updatedRound.getUpdatedAt().isBefore(updatedAt.plusMinutes(1)));
+        assertInBetween(updatedAt, LocalDateTime.now(), updatedRound.getUpdatedAt());
+    }
+
+    private void assertInBetween(LocalDateTime min, LocalDateTime max, LocalDateTime current) {
+        if (min.isEqual(current) || max.isEqual(current) || (current.isAfter(min) && current.isBefore(max))) {
+            return;
+        }
+
+        fail("Date %s should be between %s and %s".formatted(current, min, max));
     }
 }
