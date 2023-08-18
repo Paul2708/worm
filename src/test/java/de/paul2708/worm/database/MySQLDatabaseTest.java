@@ -1,6 +1,5 @@
-package de.paul2708.worm.example.database;
+package de.paul2708.worm.database;
 
-import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.MySQLDatabase;
 import org.junit.jupiter.api.Assertions;
 
@@ -21,7 +20,7 @@ public class MySQLDatabaseTest extends DatabaseTest {
             Connection connection = DriverManager.getConnection(
                     "jdbc:mysql://%s:%s/%s".formatted(HOST, PORT, DATABASE), USERNAME, PASSWORD);
             Statement statement = connection.createStatement();
-            statement.execute("DROP TABLE IF EXISTS persons, cars");
+            statement.execute("DROP TABLE IF EXISTS persons, cars, fleets");
         } catch (SQLException e) {
             Assertions.fail("Failed to clear tables", e);
         }

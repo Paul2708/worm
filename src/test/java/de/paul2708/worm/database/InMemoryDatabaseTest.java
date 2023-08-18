@@ -1,6 +1,5 @@
-package de.paul2708.worm.example.database;
+package de.paul2708.worm.database;
 
-import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.memory.InMemoryDatabase;
 
 public class InMemoryDatabaseTest extends DatabaseTest {

@@ -1,10 +1,6 @@
-package de.paul2708.worm.example.database;
+package de.paul2708.worm.database;
 
-import de.paul2708.worm.database.Database;
-import de.paul2708.worm.example.Car;
-import de.paul2708.worm.example.CarRepository;
-import de.paul2708.worm.example.Person;
-import de.paul2708.worm.example.PersonRepository;
+import de.paul2708.worm.*;
 import de.paul2708.worm.repository.CrudRepository;
 import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +17,7 @@ public abstract class DatabaseTest {
 
     private CrudRepository<Person, Integer> repository;
     private CarRepository carRepository;
+    private FleetRepository fleetRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -31,9 +28,11 @@ public abstract class DatabaseTest {
 
         this.repository = Repository.create(PersonRepository.class, Person.class, emptyDatabase);
         this.carRepository = Repository.create(CarRepository.class, Car.class, emptyDatabase);
+        this.fleetRepository = Repository.create(FleetRepository.class, Fleet.class, emptyDatabase);
 
         assumeTrue(repository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
+        assumeTrue(fleetRepository.findAll().isEmpty());
     }
 
     @Test
@@ -93,11 +92,11 @@ public abstract class DatabaseTest {
 
         Person existingPerson = optionalPerson.get();
         existingPerson.setName("Paul");
-        System.out.println(existingPerson.getId());
 
         repository.save(existingPerson);
 
         assertEquals(1, repository.findAll().size());
+        assertTrue(repository.findById(existingPerson.getId()).isPresent());
         assertEquals("Paul", repository.findById(existingPerson.getId()).get().getName());
     }
 
@@ -151,5 +150,38 @@ public abstract class DatabaseTest {
         assumeTrue(personOptional.isPresent());
 
         assertTrue(personOptional.get().isBlocked());
+    }
+
+    @Test
+    void testForeignKey() {
+        assumeTrue(repository.findAll().isEmpty());
+
+        // Save fleet
+        Fleet fleet = fleetRepository.save(new Fleet("My Fleet", new Person("Max", 42)));
+
+        assertEquals("Max", fleet.getPerson().getName());
+        assertEquals(42, fleet.getPerson().getAge());
+        assertNotEquals(0, fleet.getPerson().getId());
+
+        // Test saved person
+        assertFalse(repository.findAll().isEmpty());
+        Optional<Person> optionalPerson = repository.findById(fleet.getPerson().getId());
+        assertTrue(optionalPerson.isPresent());
+
+        Person person = optionalPerson.get();
+
+        assertEquals("Max", person.getName());
+        assertEquals(42, person.getAge());
+        assertEquals(fleet.getPerson().getId(), person.getId());
+
+        // Test saved person in fleet
+        assertFalse(fleetRepository.findAll().isEmpty());
+        Optional<Fleet> optionalFleet = fleetRepository.findById(fleet.getId());
+        assertTrue(optionalFleet.isPresent());
+
+        Fleet restoredFleet = optionalFleet.get();
+
+        assertNotNull(restoredFleet.getPerson());
+        assertEquals(person, restoredFleet.getPerson());
     }
 }

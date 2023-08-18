@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class FindByIdAction extends DatabaseAction {
 
-    private static Set<String> KEYWORDS = Set.of("findById");
+    private static final Set<String> KEYWORDS = Set.of("findById");
 
     public FindByIdAction(MethodInformation methodInformation) {
         super(methodInformation);

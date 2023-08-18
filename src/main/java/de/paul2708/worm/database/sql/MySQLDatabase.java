@@ -4,9 +4,11 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
+import de.paul2708.worm.database.sql.helper.EntityCreator;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -65,8 +67,24 @@ public class MySQLDatabase implements Database {
                 .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
-        String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s))"
+        String foreignKeyReferences = resolver.getForeignKeys().stream()
+                .map(column -> {
+                    String table = column.getProperty(ForeignKeyProperty.class).getForeignTable();
+                    String primaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().columnName();
+
+                    return "FOREIGN KEY (%s) REFERENCES %s(%s)"
+                            .formatted(column.columnName(), table, primaryKey);
+                })
+                .collect(Collectors.joining(", "));
+
+        String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s)"
                 .formatted(resolver.getTable(), sqlColumns, resolver.getPrimaryKey().columnName());
+
+        if (!resolver.getForeignKeys().isEmpty()) {
+            query += ", %s".formatted(foreignKeyReferences) + ")";
+        } else {
+            query += ")";
+        }
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -111,11 +129,11 @@ public class MySQLDatabase implements Database {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
-                setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
+                setValue(stmt, index, column, entity);
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-                setValue(stmt, column.type(), index, resolver.getValueByColumn(entity, column.columnName()));
+                setValue(stmt, index, column, entity);
                 index++;
             }
 
@@ -130,17 +148,20 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Collection<Object> findAll(AttributeResolver resolver) {
-        String query = "SELECT * FROM %s".formatted(resolver.getTable());
+        // Build query
+        String query = "SELECT * FROM %s%s"
+                .formatted(resolver.getFormattedTableNames(),
+                        resolver.getForeignKeys().isEmpty() ? "" : " WHERE " + buildConditions(resolver));
 
+        // Query database
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             ResultSet resultSet = stmt.executeQuery();
+
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
-
-                Object instance = resolver.createInstance(fieldValues);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
                 result.add(instance);
             }
 
@@ -152,19 +173,21 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Optional<Object> findById(AttributeResolver resolver, Object key) {
-        String query = "SELECT * FROM %s WHERE %s = ?"
-                .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
+        // Build query
+        String query = "SELECT * FROM %s WHERE %s = ?%s"
+                .formatted(resolver.getFormattedTableNames(), resolver.getPrimaryKey().getFullColumnName(),
+                        resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
+        // Query database
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
+
             ResultSet resultSet = stmt.executeQuery();
 
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                Map<String, Object> fieldValues = getFieldValues(resolver, resultSet);
-
-                Object instance = resolver.createInstance(fieldValues);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
                 return Optional.of(instance);
             } else {
                 return Optional.empty();
@@ -188,20 +211,14 @@ public class MySQLDatabase implements Database {
         }
     }
 
-    private Map<String, Object> getFieldValues(AttributeResolver resolver, ResultSet resultSet) {
-        Map<String, Object> fieldValues = new HashMap<>();
-        for (ColumnAttribute column : resolver.getColumns()) {
-            fieldValues.put(column.fieldName(), getValue(resultSet, column.columnName(), column.type()));
-        }
-        return fieldValues;
-    }
-
-    private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
-        try {
-            return columnsRegistry.getDataType(expectedType).from(resultSet, column);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+    private String buildConditions(AttributeResolver resolver) {
+        return resolver.getForeignKeys().stream()
+                .map(column -> {
+                    String fullColumnName = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey()
+                            .getFullColumnName();
+                    return column.getFullColumnName() + " = " + fullColumnName;
+                })
+                .collect(Collectors.joining(" AND "));
     }
 
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
@@ -209,6 +226,17 @@ public class MySQLDatabase implements Database {
             columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, value);
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void setValue(PreparedStatement statement, int index, ColumnAttribute column, Object entity) {
+        if (column.isForeignKey()) {
+            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey();
+            Object value = foreignPrimaryKey.getValue(column.getValue(entity));
+
+            setValue(statement, value.getClass(), index, value);
+        } else {
+            setValue(statement, column.type(), index, column.getValue(entity));
         }
     }
 

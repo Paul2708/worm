@@ -22,7 +22,7 @@ public class RepositoryInvocationHandler implements InvocationHandler {
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method method, Object[] args) {
         DatabaseAction saveAction = new SaveAction(new MethodInformation(method, args));
         DatabaseAction findAllAction = new FindAllAction(new MethodInformation(method, args));
         DatabaseAction findByIdAction = new FindByIdAction(new MethodInformation(method, args));

@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class SaveAction extends DatabaseAction {
 
-    private static Set<String> KEYWORDS = Set.of("save", "store", "persist");
+    private static final Set<String> KEYWORDS = Set.of("save", "store", "persist");
 
     public SaveAction(MethodInformation methodInformation) {
         super(methodInformation);

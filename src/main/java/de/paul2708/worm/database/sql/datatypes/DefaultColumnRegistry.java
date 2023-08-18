@@ -1,6 +1,8 @@
 package de.paul2708.worm.database.sql.datatypes;
 
 import de.paul2708.worm.database.sql.datatypes.impl.BooleanColumnDataType;
+import de.paul2708.worm.columns.AttributeResolver;
+import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.datatypes.impl.IntegerColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.impl.StringColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.impl.UUIDColumnDataType;
@@ -37,10 +39,35 @@ final class DefaultColumnRegistry implements ColumnsRegistry {
 
     @Override
     public <T> ColumnDataType<T> getDataType(Class<T> clazz) {
-        return dataTypes.stream()
-                .map(x -> (ColumnDataType<T>) x)
-                .filter(x -> x.matches(clazz))
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException("Unsupported data type " + clazz.getName()));
+        ColumnDataType<?> dataType = getRegisteredDataType(clazz);
+
+        if (dataType == null) {
+            dataType = getDataTypeFromPrimaryKey(clazz);
+        }
+
+        if (dataType != null) {
+            return (ColumnDataType<T>) dataType;
+        }
+
+        throw new IllegalArgumentException("Unsupported data type " + clazz.getName());
+    }
+
+    private ColumnDataType<?> getRegisteredDataType(Class<?> clazz) {
+        for (ColumnDataType<?> dataType : dataTypes) {
+            if (dataType.matches(clazz)) {
+                return dataType;
+            }
+        }
+
+        return null;
+    }
+
+    private ColumnDataType<?> getDataTypeFromPrimaryKey(Class<?> clazz) {
+        ColumnAttribute primaryKey = new AttributeResolver(clazz).getPrimaryKey();
+        if (primaryKey == null) {
+            return null;
+        }
+
+        return getRegisteredDataType(primaryKey.type());
     }
 }
