@@ -4,14 +4,12 @@ import de.paul2708.worm.*;
 import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -205,5 +203,49 @@ public abstract class DatabaseTest {
         Round round = optionalRound.get();
         assertEquals(startTime, round.getStartTime());
         assertEquals(endTime, round.getEndTime());
+    }
+
+    @Test
+    void testCreatedAt() {
+        LocalDateTime startOperationTime = LocalDateTime.now();
+
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+
+        assertNotNull(round.getCreatedAt());
+
+        assertTrue(round.getCreatedAt().isAfter(startOperationTime));
+        assertTrue(round.getCreatedAt().isBefore(LocalDateTime.now()));
+    }
+
+    @Test
+    void testUnmodifiedCreatedAt() {
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+        LocalDateTime createdAt = round.getCreatedAt();
+
+        round.setEndTime(LocalDateTime.now().plusHours(2));
+        Round updatedRound = roundRepository.save(round);
+
+        assertEquals(createdAt, updatedRound.getCreatedAt());
+    }
+
+    @Test
+    void testInitialUpdatedAt() {
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+
+        assertEquals(round.getCreatedAt(), round.getUpdatedAt());
+    }
+
+    @Test
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void testUpdatedAt() {
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+        LocalDateTime updatedAt = round.getUpdatedAt();
+
+        round.setEndTime(LocalDateTime.now().plusHours(2));
+        Round updatedRound = roundRepository.save(round);
+
+        assertNotEquals(updatedAt, updatedRound.getUpdatedAt());
+        assertTrue(updatedRound.getUpdatedAt().isAfter(updatedAt));
+        assertTrue(updatedRound.getUpdatedAt().isBefore(updatedAt.plusMinutes(1)));
     }
 }

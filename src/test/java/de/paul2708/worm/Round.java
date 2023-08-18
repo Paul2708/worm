@@ -19,12 +19,24 @@ public class Round {
     @Column("end_time")
     private LocalDateTime endTime;
 
+    @CreatedAt
+    @Column("created_at")
+    private LocalDateTime createdAt;
+
+    @UpdatedAt
+    @Column("updated_at")
+    private LocalDateTime updatedAt;
+
     public Round() {
 
     }
 
     public Round(LocalDateTime startTime, LocalDateTime endTime) {
         this.startTime = startTime;
+        this.endTime = endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
 
@@ -38,5 +50,13 @@ public class Round {
 
     public LocalDateTime getEndTime() {
         return endTime;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }
