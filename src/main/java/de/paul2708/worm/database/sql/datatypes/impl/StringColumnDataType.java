@@ -16,12 +16,12 @@ public final class StringColumnDataType implements ColumnDataType<String> {
     }
 
     @Override
-    public String from(ResultSet resultSet, String column) throws SQLException {
+    public String from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
         return resultSet.getString(column);
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, String value) throws SQLException {
+    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, String value) throws SQLException {
         statement.setString(index, value);
     }
 

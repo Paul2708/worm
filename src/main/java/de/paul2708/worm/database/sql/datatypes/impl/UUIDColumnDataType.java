@@ -17,12 +17,12 @@ public final class UUIDColumnDataType implements ColumnDataType<UUID> {
     }
 
     @Override
-    public UUID from(ResultSet resultSet, String column) throws SQLException {
+    public UUID from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
         return UUIDConverter.convert(resultSet.getBytes(column));
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, UUID value) throws SQLException {
+    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, UUID value) throws SQLException {
         statement.setBytes(index, UUIDConverter.convert(value));
     }
 

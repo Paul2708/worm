@@ -1,11 +1,11 @@
 package de.paul2708.worm.database;
 
 import de.paul2708.worm.*;
-import de.paul2708.worm.repository.CrudRepository;
 import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,9 +15,10 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public abstract class DatabaseTest {
 
-    private CrudRepository<Person, Integer> repository;
+    private PersonRepository personRepository;
     private CarRepository carRepository;
     private FleetRepository fleetRepository;
+    private RoundRepository roundRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -26,21 +27,23 @@ public abstract class DatabaseTest {
         Database emptyDatabase = createEmptyDatabase();
         emptyDatabase.connect();
 
-        this.repository = Repository.create(PersonRepository.class, Person.class, emptyDatabase);
+        this.personRepository = Repository.create(PersonRepository.class, Person.class, emptyDatabase);
         this.carRepository = Repository.create(CarRepository.class, Car.class, emptyDatabase);
         this.fleetRepository = Repository.create(FleetRepository.class, Fleet.class, emptyDatabase);
+        this.roundRepository = Repository.create(RoundRepository.class, Round.class, emptyDatabase);
 
-        assumeTrue(repository.findAll().isEmpty());
+        assumeTrue(personRepository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
         assumeTrue(fleetRepository.findAll().isEmpty());
+        assumeTrue(roundRepository.findAll().isEmpty());
     }
 
     @Test
     void testBasicSave() {
         Person person = new Person("Max", 42);
-        repository.save(person);
+        personRepository.save(person);
 
-        assertEquals(1, repository.findAll().size());
+        assertEquals(1, personRepository.findAll().size());
     }
 
     @Test
@@ -49,14 +52,14 @@ public abstract class DatabaseTest {
 
         assumeTrue(person.getId() == 0);
 
-        Person savedPerson = repository.save(person);
+        Person savedPerson = personRepository.save(person);
         assertTrue(savedPerson.getId() != 0);
     }
 
     @Test
     void testSavedAttributes() {
         Person person = new Person("Max", 42);
-        Person savedPerson = repository.save(person);
+        Person savedPerson = personRepository.save(person);
 
         assertEquals(person.getName(), savedPerson.getName());
         assertEquals(person.getAge(), savedPerson.getAge());
@@ -64,10 +67,10 @@ public abstract class DatabaseTest {
 
     @Test
     void testFindByValidId() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = personRepository.save(new Person("Max", 42));
         int id = person.getId();
 
-        Optional<Person> optionalPerson = repository.findById(id);
+        Optional<Person> optionalPerson = personRepository.findById(id);
         assertTrue(optionalPerson.isPresent());
 
         Person foundPerson = optionalPerson.get();
@@ -78,46 +81,46 @@ public abstract class DatabaseTest {
 
     @Test
     void testFindByInvalidId() {
-        Optional<Person> optionalPerson = repository.findById(42);
+        Optional<Person> optionalPerson = personRepository.findById(42);
         assertTrue(optionalPerson.isEmpty());
     }
 
     @Test
     void testUpdate() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = personRepository.save(new Person("Max", 42));
         int id = person.getId();
 
-        Optional<Person> optionalPerson = repository.findById(id);
+        Optional<Person> optionalPerson = personRepository.findById(id);
         assertTrue(optionalPerson.isPresent());
 
         Person existingPerson = optionalPerson.get();
         existingPerson.setName("Paul");
 
-        repository.save(existingPerson);
+        personRepository.save(existingPerson);
 
-        assertEquals(1, repository.findAll().size());
-        assertTrue(repository.findById(existingPerson.getId()).isPresent());
-        assertEquals("Paul", repository.findById(existingPerson.getId()).get().getName());
+        assertEquals(1, personRepository.findAll().size());
+        assertTrue(personRepository.findById(existingPerson.getId()).isPresent());
+        assertEquals("Paul", personRepository.findById(existingPerson.getId()).get().getName());
     }
 
     @Test
     void testSuccessfulDeletion() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = personRepository.save(new Person("Max", 42));
 
-        assumeTrue(repository.findById(person.getId()).isPresent());
+        assumeTrue(personRepository.findById(person.getId()).isPresent());
 
-        repository.delete(person);
-        assertTrue(repository.findById(person.getId()).isEmpty());
+        personRepository.delete(person);
+        assertTrue(personRepository.findById(person.getId()).isEmpty());
     }
 
     @Test
     void testNonExistingDeletion() {
-        repository.save(new Person("Max", 42));
-        assumeTrue(repository.findAll().size() == 1);
+        personRepository.save(new Person("Max", 42));
+        assumeTrue(personRepository.findAll().size() == 1);
 
-        repository.delete(new Person("Max", 42));
+        personRepository.delete(new Person("Max", 42));
 
-        assertEquals(1, repository.findAll().size());
+        assertEquals(1, personRepository.findAll().size());
     }
 
     @Test
@@ -140,13 +143,13 @@ public abstract class DatabaseTest {
 
     @Test
     void testBooleanDataType() {
-        Person person = repository.save(new Person("Max", 42));
+        Person person = personRepository.save(new Person("Max", 42));
         assumeFalse(person.isBlocked());
 
         person.setBlocked(true);
-        repository.save(person);
+        personRepository.save(person);
 
-        Optional<Person> personOptional = repository.findById(person.getId());
+        Optional<Person> personOptional = personRepository.findById(person.getId());
         assumeTrue(personOptional.isPresent());
 
         assertTrue(personOptional.get().isBlocked());
@@ -154,7 +157,7 @@ public abstract class DatabaseTest {
 
     @Test
     void testForeignKey() {
-        assumeTrue(repository.findAll().isEmpty());
+        assumeTrue(personRepository.findAll().isEmpty());
 
         // Save fleet
         Fleet fleet = fleetRepository.save(new Fleet("My Fleet", new Person("Max", 42)));
@@ -164,8 +167,8 @@ public abstract class DatabaseTest {
         assertNotEquals(0, fleet.getPerson().getId());
 
         // Test saved person
-        assertFalse(repository.findAll().isEmpty());
-        Optional<Person> optionalPerson = repository.findById(fleet.getPerson().getId());
+        assertFalse(personRepository.findAll().isEmpty());
+        Optional<Person> optionalPerson = personRepository.findById(fleet.getPerson().getId());
         assertTrue(optionalPerson.isPresent());
 
         Person person = optionalPerson.get();
@@ -183,5 +186,78 @@ public abstract class DatabaseTest {
 
         assertNotNull(restoredFleet.getPerson());
         assertEquals(person, restoredFleet.getPerson());
+    }
+
+    @Test
+    void testDateTimeDataType() {
+        LocalDateTime startTime = LocalDateTime.of(2023, 8, 27, 10, 0);
+        LocalDateTime endTime = LocalDateTime.of(2023, 8, 27, 10, 45);
+
+        int id = roundRepository.save(new Round(startTime, endTime)).getId();
+
+        Optional<Round> optionalRound = roundRepository.findById(id);
+        assertTrue(optionalRound.isPresent());
+
+        Round round = optionalRound.get();
+        assertEquals(startTime, round.getStartTime());
+        assertEquals(endTime, round.getEndTime());
+    }
+
+    @Test
+    void testCreatedAt() {
+        LocalDateTime startOperationTime = LocalDateTime.now();
+
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+
+        assertNotNull(round.getCreatedAt());
+
+        assertInBetween(startOperationTime, LocalDateTime.now(), round.getCreatedAt());
+    }
+
+    @Test
+    void testUnmodifiedCreatedAt() {
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+        LocalDateTime createdAt = round.getCreatedAt();
+
+        round.setEndTime(LocalDateTime.now().plusHours(2));
+        Round updatedRound = roundRepository.save(round);
+
+        assertNotNull(createdAt);
+        assertEquals(createdAt, updatedRound.getCreatedAt());
+    }
+
+    @Test
+    void testInitialUpdatedAt() {
+        LocalDateTime startOperationTime = LocalDateTime.now();
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+
+        assertInBetween(startOperationTime, LocalDateTime.now(), round.getUpdatedAt());
+    }
+
+    @Test
+    void testUpdatedAt() {
+        Round round = roundRepository.save(new Round(LocalDateTime.now(), LocalDateTime.now().plusHours(1)));
+        LocalDateTime updatedAt = round.getUpdatedAt();
+
+        // Ensure that time passed between the last updated
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        round.setEndTime(LocalDateTime.now().plusHours(2));
+        Round updatedRound = roundRepository.save(round);
+
+        assertNotEquals(updatedAt, updatedRound.getUpdatedAt());
+        assertInBetween(updatedAt, LocalDateTime.now(), updatedRound.getUpdatedAt());
+    }
+
+    private void assertInBetween(LocalDateTime min, LocalDateTime max, LocalDateTime current) {
+        if (min.isEqual(current) || max.isEqual(current) || (current.isAfter(min) && current.isBefore(max))) {
+            return;
+        }
+
+        fail("Date %s should be between %s and %s".formatted(current, min, max));
     }
 }

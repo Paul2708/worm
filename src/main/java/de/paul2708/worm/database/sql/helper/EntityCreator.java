@@ -23,7 +23,7 @@ public final class EntityCreator {
 
         Map<String, Object> fieldValues = new HashMap<>();
         for (ColumnAttribute column : resolver.getColumns()) {
-            fieldValues.put(column.fieldName(), getValue(resultSet, registry, column.getFullColumnName(), column.type()));
+            fieldValues.put(column.fieldName(), getValue(resultSet, registry, column, column.getFullColumnName(), column.type()));
         }
 
         fieldValues.putAll(foreignFields);
@@ -31,9 +31,10 @@ public final class EntityCreator {
         return resolver.createInstance(fieldValues);
     }
 
-    private static Object getValue(ResultSet resultSet, ColumnsRegistry registry, String column, Class<?> expectedType) {
+    private static Object getValue(ResultSet resultSet, ColumnsRegistry registry, ColumnAttribute attribute,
+                                   String column, Class<?> expectedType) {
         try {
-            return registry.getDataType(expectedType).from(resultSet, column);
+            return registry.getDataType(expectedType).from(resultSet, attribute, column);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

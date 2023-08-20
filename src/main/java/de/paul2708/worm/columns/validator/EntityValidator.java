@@ -14,6 +14,7 @@ public final class EntityValidator {
 
     }
 
+    // TODO: Merge methods into one for loop over all fields
     public static void validate(Class<?> clazz) {
         validatePrimaryKey(clazz);
         validateEmptyConstructor(clazz);

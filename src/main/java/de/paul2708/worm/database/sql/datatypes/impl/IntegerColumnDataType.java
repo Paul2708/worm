@@ -15,12 +15,12 @@ public final class IntegerColumnDataType implements ColumnDataType<Integer> {
     }
 
     @Override
-    public Integer from(ResultSet resultSet, String column) throws SQLException {
+    public Integer from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
         return resultSet.getInt(column);
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, Integer value) throws SQLException {
+    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, Integer value) throws SQLException {
         statement.setInt(index, value);
     }
 

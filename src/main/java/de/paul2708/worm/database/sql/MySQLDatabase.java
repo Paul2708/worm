@@ -4,6 +4,8 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.columns.CreatedAt;
+import de.paul2708.worm.columns.UpdatedAt;
 import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
@@ -11,10 +13,7 @@ import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -112,15 +111,24 @@ public class MySQLDatabase implements Database {
     @Override
     public Object save(AttributeResolver resolver, Object entity) {
         String sqlColumns = resolver.getColumns().stream()
+                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class))
                 .map(ColumnAttribute::columnName)
                 .collect(Collectors.joining(", "));
         String sqlValues = resolver.getColumns().stream()
+                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class))
                 .map(column -> "?")
                 .collect(Collectors.joining(", "));
         String sqlUpdate = resolver.getColumnsWithoutPrimaryKey().stream()
+                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class))
                 .map(ColumnAttribute::columnName)
                 .map("%s = ?"::formatted)
                 .collect(Collectors.joining(", "));
+
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (column.hasAnnotation(UpdatedAt.class)) {
+                sqlUpdate += ", " + column.columnName() + " = CURRENT_TIMESTAMP(6)";
+            }
+        }
 
         String query = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s"
                 .formatted(resolver.getTable(), sqlColumns, sqlValues, sqlUpdate);
@@ -129,17 +137,57 @@ public class MySQLDatabase implements Database {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
+                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)) {
+                    continue;
+                }
+
                 setValue(stmt, index, column, entity);
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
+                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)) {
+                    continue;
+                }
+
                 setValue(stmt, index, column, entity);
                 index++;
             }
 
             stmt.execute();
 
-            // TODO: Set key from database if key is null
+            // Fetch default column values
+            List<ColumnAttribute> timestampColumns = resolver.getColumns().stream()
+                    .filter(column -> column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class))
+                    .sorted()
+                    .toList();
+
+            if (timestampColumns.isEmpty()) {
+                return entity;
+            }
+
+            String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
+                    .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
+                            resolver.getTable(),
+                            resolver.getPrimaryKey().columnName());
+
+            try (Connection connection = dataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(timestampQuery)) {
+                setValue(statement, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
+                        resolver.getPrimaryKey().getValue(entity));
+
+                ResultSet resultSet = statement.executeQuery();
+
+                if (resultSet.next()) {
+                    for (ColumnAttribute column : timestampColumns) {
+                        Object timestamp = columnsRegistry.getDataType(column.type()).from(resultSet, column,
+                                column.columnName());
+                        column.setValue(entity, timestamp);
+                    }
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
             return entity;
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -181,7 +229,7 @@ public class MySQLDatabase implements Database {
         // Query database
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, key);
+            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(), key);
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -204,7 +252,8 @@ public class MySQLDatabase implements Database {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
+            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
+                    resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
             stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -221,9 +270,9 @@ public class MySQLDatabase implements Database {
                 .collect(Collectors.joining(" AND "));
     }
 
-    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
+    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, ColumnAttribute attribute, Object value) {
         try {
-            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, value);
+            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, attribute, value);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -234,9 +283,9 @@ public class MySQLDatabase implements Database {
             ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey();
             Object value = foreignPrimaryKey.getValue(column.getValue(entity));
 
-            setValue(statement, value.getClass(), index, value);
+            setValue(statement, value.getClass(), index, column, value);
         } else {
-            setValue(statement, column.type(), index, column.getValue(entity));
+            setValue(statement, column.type(), index, column, column.getValue(entity));
         }
     }
 
