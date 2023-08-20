@@ -189,7 +189,7 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void testInstantDataType() {
+    void testDateTimeDataType() {
         LocalDateTime startTime = LocalDateTime.of(2023, 8, 27, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2023, 8, 27, 10, 45);
 
@@ -222,6 +222,7 @@ public abstract class DatabaseTest {
         round.setEndTime(LocalDateTime.now().plusHours(2));
         Round updatedRound = roundRepository.save(round);
 
+        assertNotNull(createdAt);
         assertEquals(createdAt, updatedRound.getCreatedAt());
     }
 
@@ -240,7 +241,7 @@ public abstract class DatabaseTest {
 
         // Ensure that time passed between the last updated
         try {
-            Thread.sleep(100);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
