@@ -15,12 +15,12 @@ public final class BooleanColumnDataType implements ColumnDataType<Boolean> {
     }
 
     @Override
-    public Boolean from(ResultSet resultSet, String column) throws SQLException {
+    public Boolean from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
         return resultSet.getBoolean(column);
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, Boolean value) throws SQLException {
+    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, Boolean value) throws SQLException {
         statement.setBoolean(index, value);
     }
 

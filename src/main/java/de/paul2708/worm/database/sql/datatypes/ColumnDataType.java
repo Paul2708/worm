@@ -10,14 +10,14 @@ public interface ColumnDataType<T> {
 
     boolean matches(Class<?> clazz);
 
-    T from(ResultSet resultSet, String column) throws SQLException;
+    T from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException;
 
-    void to(PreparedStatement statement, int index, T value) throws SQLException;
+    void to(PreparedStatement statement, int index, ColumnAttribute attribute, T value) throws SQLException;
 
     @Deprecated
-    default void unsafeTo(PreparedStatement statement, int index, Object value) throws SQLException {
+    default void unsafeTo(PreparedStatement statement, int index, ColumnAttribute attribute, Object value) throws SQLException {
         //noinspection unchecked
-        to(statement, index, (T) value);
+        to(statement, index, attribute, (T) value);
     }
 
     /**

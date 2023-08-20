@@ -65,12 +65,12 @@ public class ColumnRegistryTest {
         }
 
         @Override
-        public Unregistered from(ResultSet resultSet, String column) {
+        public Unregistered from(ResultSet resultSet, ColumnAttribute attribute, String column) {
             return null;
         }
 
         @Override
-        public void to(PreparedStatement statement, int index, Unregistered value) {
+        public void to(PreparedStatement statement, int index, ColumnAttribute attribute, Unregistered value) {
 
         }
 
