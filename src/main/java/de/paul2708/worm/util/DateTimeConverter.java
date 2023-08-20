@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-public final class TimeDateConverter {
+public final class DateTimeConverter {
 
     public static LocalDateTime convertFromUTC(LocalDateTime dateTime, ZoneId targetZone) {
         ZonedDateTime utcDateTime = dateTime.atZone(ZoneId.of("UTC"));
