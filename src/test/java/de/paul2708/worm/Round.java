@@ -13,17 +13,21 @@ public class Round {
     @Column("id")
     private int id;
 
+    @TimeZone("Europe/Berlin")
     @Column("start_time")
     private LocalDateTime startTime;
 
+    @TimeZone("Europe/Berlin")
     @Column("end_time")
     private LocalDateTime endTime;
 
     @CreatedAt
+    @TimeZone("Europe/Berlin")
     @Column("created_at")
     private LocalDateTime createdAt;
 
     @UpdatedAt
+    @TimeZone("Europe/Berlin")
     @Column("updated_at")
     private LocalDateTime updatedAt;
 
