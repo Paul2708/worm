@@ -189,6 +189,25 @@ public abstract class DatabaseTest {
     }
 
     @Test
+    void testAlreadyExistingForeignKey() {
+        Person person = personRepository.save(new Person("Max", 42));
+        Fleet fleet = fleetRepository.save(new Fleet("My Fleet", person));
+
+        // Test stored fleet
+        assertFalse(fleetRepository.findAll().isEmpty());
+        Optional<Fleet> optionalFleet = fleetRepository.findById(fleet.getId());
+        assertTrue(optionalFleet.isPresent());
+
+        Fleet restoredFleet = optionalFleet.get();
+
+        assertNotNull(restoredFleet.getPerson());
+        assertEquals(person, restoredFleet.getPerson());
+
+        // Test duplicated foreign entity
+        assertEquals(1, personRepository.findAll().size());
+    }
+
+    @Test
     void testDateTimeDataType() {
         LocalDateTime startTime = LocalDateTime.of(2023, 8, 27, 10, 0);
         LocalDateTime endTime = LocalDateTime.of(2023, 8, 27, 10, 45);
