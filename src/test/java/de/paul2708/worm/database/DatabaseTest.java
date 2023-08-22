@@ -6,8 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -19,6 +18,7 @@ public abstract class DatabaseTest {
     private CarRepository carRepository;
     private FleetRepository fleetRepository;
     private RoundRepository roundRepository;
+    private CollectorRepository collectorRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -31,6 +31,7 @@ public abstract class DatabaseTest {
         this.carRepository = Repository.create(CarRepository.class, Car.class, emptyDatabase);
         this.fleetRepository = Repository.create(FleetRepository.class, Fleet.class, emptyDatabase);
         this.roundRepository = Repository.create(RoundRepository.class, Round.class, emptyDatabase);
+        this.collectorRepository = null;
 
         assumeTrue(personRepository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
@@ -278,5 +279,41 @@ public abstract class DatabaseTest {
         }
 
         fail("Date %s should be between %s and %s".formatted(current, min, max));
+    }
+
+    @Test
+    void testStoringCollections() {
+        Collector collector = new Collector("Collector 01", Set.of("Badge01", "Badge02"),
+                List.of(2, 3, 5, 7, 11));
+        collectorRepository.save(collector);
+
+        Collector storedCollector = collectorRepository.findById("Collector 01").get();
+        assertEquals(Set.of("Badge01", "Badge02"), storedCollector.getBadges());
+        assertEquals(List.of(2, 3, 5, 7, 11), storedCollector.getPrimeNumbers());
+    }
+
+    @Test
+    void testEmptyCollections() {
+        Collector collector = new Collector("Collector 01", Set.of(), List.of());
+        collectorRepository.save(collector);
+
+        Collector storedCollector = collectorRepository.findById("Collector 01").get();
+        assertTrue(storedCollector.getBadges().isEmpty());
+        assertTrue(storedCollector.getPrimeNumbers().isEmpty());
+    }
+
+    @Test
+    void testModifyingCollections() {
+        Collector collector = new Collector("Collector 01", Set.of(),
+                List.of(2, 3, 5));
+        collectorRepository.save(collector);
+
+        collector.addBadge("Badge 01");
+        collector.removePrime(3);
+
+        collectorRepository.save(collector);
+
+        assertEquals(Set.of("Badge 01"), collector.getBadges());
+        assertEquals(List.of(2, 5), collector.getPrimeNumbers());
     }
 }
