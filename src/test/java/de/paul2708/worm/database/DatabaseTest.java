@@ -316,4 +316,16 @@ public abstract class DatabaseTest {
         assertEquals(Set.of("Badge 01"), collector.getBadges());
         assertEquals(List.of(2, 5), collector.getPrimeNumbers());
     }
+
+    @Test
+    void testDeleteCollections() {
+        Collector collector = new Collector("Collector 01", Set.of("Badge 01"), List.of(2, 3, 5));
+        collectorRepository.save(collector);
+        collectorRepository.delete(collector);
+
+        collectorRepository.save(new Collector("Collector 01", Set.of("Badge 02"), List.of(2, 3)));
+        Collector storedCollector = collectorRepository.findById("Collector 01").get();
+        assertEquals(Set.of("Badge 02"), storedCollector.getBadges());
+        assertEquals(List.of(2, 3), storedCollector.getPrimeNumbers());
+    }
 }
