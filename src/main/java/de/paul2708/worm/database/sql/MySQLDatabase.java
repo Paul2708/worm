@@ -11,6 +11,7 @@ import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
+import de.paul2708.worm.util.Reflections;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -62,6 +63,24 @@ public class MySQLDatabase implements Database {
 
     @Override
     public void prepare(AttributeResolver resolver) {
+        // Create collection tables
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (Reflections.isList(column.type())) {
+                Class<?> elementType = Reflections.getElementType(column.getField());
+
+                String query = "CREATE TABLE IF NOT EXISTS %s (id INT NOT NULL AUTO_INCREMENT, `index` INT, value %s, PRIMARY KEY (id))"
+                        .formatted(resolver.getTable() + "_" + column.columnName(), toSqlType(elementType));
+                query(query);
+            } else if (Reflections.isSet(column.type())) {
+                Class<?> elementType = Reflections.getElementType(column.getField());
+
+                String query = "CREATE TABLE IF NOT EXISTS %s (id int NOT NULL AUTO_INCREMENT, value %s, PRIMARY KEY (id))"
+                        .formatted(resolver.getTable() + "_" + column.columnName(), toSqlType(elementType));
+                query(query);
+            }
+        }
+
+        // Create entity table
         String sqlColumns = resolver.getColumns().stream()
                 .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
                 .collect(Collectors.joining(", "));
@@ -292,5 +311,20 @@ public class MySQLDatabase implements Database {
     private String toSqlType(ColumnAttribute attribute) {
         Class<?> type = attribute.type();
         return columnsRegistry.getDataType(type).getSqlType(attribute);
+    }
+
+    private String toSqlType(Class<?> type) {
+        return columnsRegistry.getDataType(type).getSqlType(null);
+    }
+
+    private void query(String query) {
+        System.out.println(query);
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
