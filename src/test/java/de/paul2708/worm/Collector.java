@@ -1,9 +1,12 @@
 package de.paul2708.worm;
 
 import de.paul2708.worm.columns.Column;
+import de.paul2708.worm.columns.MaxLength;
 import de.paul2708.worm.columns.PrimaryKey;
 import de.paul2708.worm.columns.Table;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -11,6 +14,7 @@ import java.util.Set;
 public class Collector {
 
     @PrimaryKey
+    @MaxLength(255)
     @Column("name")
     private String name;
 
@@ -26,8 +30,8 @@ public class Collector {
 
     public Collector(String name, Set<String> badges, List<Integer> primeNumbers) {
         this.name = name;
-        this.badges = badges;
-        this.primeNumbers = primeNumbers;
+        this.badges = new HashSet<>(badges);
+        this.primeNumbers = new ArrayList<>(primeNumbers);
     }
 
     public void addBadge(String badge) {

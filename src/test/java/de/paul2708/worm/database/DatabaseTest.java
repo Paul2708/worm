@@ -31,12 +31,13 @@ public abstract class DatabaseTest {
         this.carRepository = Repository.create(CarRepository.class, Car.class, emptyDatabase);
         this.fleetRepository = Repository.create(FleetRepository.class, Fleet.class, emptyDatabase);
         this.roundRepository = Repository.create(RoundRepository.class, Round.class, emptyDatabase);
-        this.collectorRepository = null;
+        this.collectorRepository = Repository.create(CollectorRepository.class, Collector.class, emptyDatabase);
 
         assumeTrue(personRepository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
         assumeTrue(fleetRepository.findAll().isEmpty());
         assumeTrue(roundRepository.findAll().isEmpty());
+        assumeTrue(collectorRepository.findAll().isEmpty());
     }
 
     @Test
