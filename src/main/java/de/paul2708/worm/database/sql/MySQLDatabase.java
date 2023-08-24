@@ -10,6 +10,7 @@ import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
+import de.paul2708.worm.database.sql.helper.CollectionSupportTable;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
 import de.paul2708.worm.util.Reflections;
 
@@ -65,18 +66,8 @@ public class MySQLDatabase implements Database {
     public void prepare(AttributeResolver resolver) {
         // Create collection tables
         for (ColumnAttribute column : resolver.getColumns()) {
-            if (Reflections.isList(column.type())) {
-                Class<?> elementType = Reflections.getElementType(column.getField());
-
-                String query = "CREATE TABLE IF NOT EXISTS %s (id INT NOT NULL AUTO_INCREMENT, `index` INT, value %s, PRIMARY KEY (id))"
-                        .formatted(resolver.getTable() + "_" + column.columnName(), toSqlType(elementType));
-                query(query);
-            } else if (Reflections.isSet(column.type())) {
-                Class<?> elementType = Reflections.getElementType(column.getField());
-
-                String query = "CREATE TABLE IF NOT EXISTS %s (id int NOT NULL AUTO_INCREMENT, value %s, PRIMARY KEY (id))"
-                        .formatted(resolver.getTable() + "_" + column.columnName(), toSqlType(elementType));
-                query(query);
+            if (column.isCollection()) {
+                new CollectionSupportTable(resolver, column, dataSource, columnsRegistry).create();
             }
         }
 
@@ -129,6 +120,52 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Object save(AttributeResolver resolver, Object entity) {
+        // Save collections
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (Reflections.isList(column.type()) || Reflections.isSet(column.type())) {
+                String query = "DELETE %s FROM %s JOIN %s ON %s = %s WHERE %s = %s AND %s = ?"
+                        .formatted(resolver.getTable() + "_" + column.columnName(),
+                                resolver.getTable() + "_" + column.columnName(),
+                                resolver.getTable(),
+                                column.getFullColumnName(),
+                                resolver.getTable() + "_" + column.columnName() + ".id",
+                                resolver.getTable() + "_" + column.columnName() + ".id",
+                                column.getFullColumnName(),
+                                resolver.getPrimaryKey().getFullColumnName());
+
+                try (Connection conn = dataSource.getConnection();
+                     PreparedStatement stmt = conn.prepareStatement(query)) {
+                    setValue(stmt, 1, resolver.getPrimaryKey(), entity);
+                    stmt.execute();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (Reflections.isList(column.type())) {
+                List<?> list = (List<?>) column.getValue(entity);
+                List<String> sqlValues = new ArrayList<>();
+                for (int i = 0; i < list.size(); i++) {
+                    sqlValues.add("(" + i + ", ?)");
+                }
+
+                String query = "INSERT INTO %s (`index`, value) VALUES %s"
+                        .formatted(resolver.getTable() + "_" + column.columnName(),
+                                String.join(", ", sqlValues));
+
+                try (Connection conn = dataSource.getConnection();
+                     PreparedStatement stmt = conn.prepareStatement(query)) {
+                    setValue(stmt, 1, resolver.getPrimaryKey(), entity);
+                    stmt.execute();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+
+        // Save entity attributes
         String sqlColumns = resolver.getColumns().stream()
                 .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class))
                 .map(ColumnAttribute::columnName)
@@ -310,6 +347,11 @@ public class MySQLDatabase implements Database {
 
     private String toSqlType(ColumnAttribute attribute) {
         Class<?> type = attribute.type();
+
+        if (Reflections.isSet(type) || Reflections.isList(type)) {
+            return "INT";
+        }
+
         return columnsRegistry.getDataType(type).getSqlType(attribute);
     }
 

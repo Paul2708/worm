@@ -1,6 +1,7 @@
 package de.paul2708.worm.columns;
 
 import de.paul2708.worm.columns.properties.*;
+import de.paul2708.worm.util.Reflections;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -117,6 +118,10 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
 
     public boolean isForeignKey() {
         return hasProperty(ForeignKeyProperty.class);
+    }
+
+    public boolean isCollection() {
+        return Reflections.isSet(type) || Reflections.isList(type);
     }
 
     @Override
