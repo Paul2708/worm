@@ -211,63 +211,12 @@ public class MySQLDatabase implements Database {
 
         // Save collections
         for (ColumnAttribute column : resolver.getColumns()) {
-            new CollectionSupportTable(resolver, column, dataSource, columnsRegistry).deleteExistingElements(entity);
+            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, dataSource, columnsRegistry);
+            supportTable.deleteExistingElements(entity);
+            supportTable.insert(entity);
         }
 
-        for (ColumnAttribute column : resolver.getColumns()) {
-            if (Reflections.isList(column.type())) {
-                List<?> list = (List<?>) column.getValue(entity);
-                List<String> sqlValues2 = new ArrayList<>();
-                for (int i = 0; i < list.size(); i++) {
-                    sqlValues2.add("(?, " + i + ", ?)");
-                }
 
-                String query2 = "INSERT INTO %s (parent_id, `index`, value) VALUES %s"
-                        .formatted(resolver.getTable() + "_" + column.columnName(),
-                                String.join(", ", sqlValues2));
-                try (Connection conn = dataSource.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement(query2)) {
-                    int index = 1;
-                    for (int i = 0; i < list.size(); i++) {
-                        setValue(stmt, index, resolver.getPrimaryKey(), entity);
-                        index++;
-                        setValue(stmt, Reflections.getElementType(column.getField()), index, list.get(i));
-                        index++;
-                    }
-
-                    System.out.println(stmt);
-                    stmt.execute();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            } else if (Reflections.isSet(column.type())) {
-                Set<?> set = (Set<?>) column.getValue(entity);
-                List<String> sqlValues2 = new ArrayList<>();
-                for (Object element : set) {
-                    sqlValues2.add("(?, ?)");
-                }
-
-                String query2 = "INSERT INTO %s (parent_id, value) VALUES %s"
-                        .formatted(resolver.getTable() + "_" + column.columnName(),
-                                String.join(", ", sqlValues2));
-                try (Connection conn = dataSource.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement(query2)) {
-                    int index = 1;
-
-                    for (Object element : set) {
-                        setValue(stmt, index, resolver.getPrimaryKey(), entity);
-                        index++;
-                        setValue(stmt, Reflections.getElementType(column.getField()), index, element);
-                        index++;
-                    }
-
-                    System.out.println(stmt);
-                    stmt.execute();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
 
         return entity;
     }
@@ -346,14 +295,6 @@ public class MySQLDatabase implements Database {
                     return column.getFullColumnName() + " = " + fullColumnName;
                 })
                 .collect(Collectors.joining(" AND "));
-    }
-
-    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
-        try {
-            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, null, value);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, ColumnAttribute attribute, Object value) {
