@@ -19,10 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {
@@ -128,62 +125,17 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Object save(AttributeResolver resolver, Object entity) {
-        // Save collections
-        for (ColumnAttribute column : resolver.getColumns()) {
-            if (Reflections.isList(column.type()) || Reflections.isSet(column.type())) {
-                String query = "DELETE %s FROM %s JOIN %s ON %s = %s WHERE %s = %s AND %s = ?"
-                        .formatted(resolver.getTable() + "_" + column.columnName(),
-                                resolver.getTable() + "_" + column.columnName(),
-                                resolver.getTable(),
-                                column.getFullColumnName(),
-                                resolver.getTable() + "_" + column.columnName() + ".id",
-                                resolver.getTable() + "_" + column.columnName() + ".id",
-                                column.getFullColumnName(),
-                                resolver.getPrimaryKey().getFullColumnName());
-
-                try (Connection conn = dataSource.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement(query)) {
-                    setValue(stmt, 1, resolver.getPrimaryKey(), entity);
-                    stmt.execute();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        for (ColumnAttribute column : resolver.getColumns()) {
-            if (Reflections.isList(column.type())) {
-                List<?> list = (List<?>) column.getValue(entity);
-                List<String> sqlValues = new ArrayList<>();
-                for (int i = 0; i < list.size(); i++) {
-                    sqlValues.add("(" + i + ", ?)");
-                }
-
-                String query = "INSERT INTO %s (`index`, value) VALUES %s"
-                        .formatted(resolver.getTable() + "_" + column.columnName(),
-                                String.join(", ", sqlValues));
-
-                try (Connection conn = dataSource.getConnection();
-                     PreparedStatement stmt = conn.prepareStatement(query)) {
-                    setValue(stmt, 1, resolver.getPrimaryKey(), entity);
-                    stmt.execute();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-
         // Save entity attributes
         String sqlColumns = resolver.getColumns().stream()
-                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class))
+                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class) && !column.isCollection())
                 .map(ColumnAttribute::columnName)
                 .collect(Collectors.joining(", "));
         String sqlValues = resolver.getColumns().stream()
-                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class))
+                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class)  && !column.isCollection())
                 .map(column -> "?")
                 .collect(Collectors.joining(", "));
         String sqlUpdate = resolver.getColumnsWithoutPrimaryKey().stream()
-                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class))
+                .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class)  && !column.isCollection())
                 .map(ColumnAttribute::columnName)
                 .map("%s = ?"::formatted)
                 .collect(Collectors.joining(", "));
@@ -201,7 +153,8 @@ public class MySQLDatabase implements Database {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
-                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)) {
+                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)
+                        || column.isCollection()) {
                     continue;
                 }
 
@@ -209,13 +162,16 @@ public class MySQLDatabase implements Database {
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)) {
+                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)
+                        || column.isCollection()) {
                     continue;
                 }
 
                 setValue(stmt, index, column, entity);
                 index++;
             }
+
+            System.out.println(stmt);
 
             stmt.execute();
 
@@ -225,37 +181,95 @@ public class MySQLDatabase implements Database {
                     .sorted()
                     .toList();
 
-            if (timestampColumns.isEmpty()) {
-                return entity;
-            }
+            if (!timestampColumns.isEmpty()) {
+                String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
+                        .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
+                                resolver.getTable(),
+                                resolver.getPrimaryKey().columnName());
 
-            String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
-                    .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
-                            resolver.getTable(),
-                            resolver.getPrimaryKey().columnName());
+                try (Connection connection = dataSource.getConnection();
+                     PreparedStatement statement = connection.prepareStatement(timestampQuery)) {
+                    setValue(statement, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
+                            resolver.getPrimaryKey().getValue(entity));
 
-            try (Connection connection = dataSource.getConnection();
-                 PreparedStatement statement = connection.prepareStatement(timestampQuery)) {
-                setValue(statement, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
-                        resolver.getPrimaryKey().getValue(entity));
+                    ResultSet resultSet = statement.executeQuery();
 
-                ResultSet resultSet = statement.executeQuery();
-
-                if (resultSet.next()) {
-                    for (ColumnAttribute column : timestampColumns) {
-                        Object timestamp = columnsRegistry.getDataType(column.type()).from(resultSet, column,
-                                column.columnName());
-                        column.setValue(entity, timestamp);
+                    if (resultSet.next()) {
+                        for (ColumnAttribute column : timestampColumns) {
+                            Object timestamp = columnsRegistry.getDataType(column.type()).from(resultSet, column,
+                                    column.columnName());
+                            column.setValue(entity, timestamp);
+                        }
                     }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
             }
-
-            return entity;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
+        // Save collections
+        for (ColumnAttribute column : resolver.getColumns()) {
+            new CollectionSupportTable(resolver, column, dataSource, columnsRegistry).deleteExistingElements(entity);
+        }
+
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (Reflections.isList(column.type())) {
+                List<?> list = (List<?>) column.getValue(entity);
+                List<String> sqlValues2 = new ArrayList<>();
+                for (int i = 0; i < list.size(); i++) {
+                    sqlValues2.add("(?, " + i + ", ?)");
+                }
+
+                String query2 = "INSERT INTO %s (parent_id, `index`, value) VALUES %s"
+                        .formatted(resolver.getTable() + "_" + column.columnName(),
+                                String.join(", ", sqlValues2));
+                try (Connection conn = dataSource.getConnection();
+                     PreparedStatement stmt = conn.prepareStatement(query2)) {
+                    int index = 1;
+                    for (int i = 0; i < list.size(); i++) {
+                        setValue(stmt, index, resolver.getPrimaryKey(), entity);
+                        index++;
+                        setValue(stmt, Reflections.getElementType(column.getField()), index, list.get(i));
+                        index++;
+                    }
+
+                    System.out.println(stmt);
+                    stmt.execute();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            } else if (Reflections.isSet(column.type())) {
+                Set<?> set = (Set<?>) column.getValue(entity);
+                List<String> sqlValues2 = new ArrayList<>();
+                for (Object element : set) {
+                    sqlValues2.add("(?, ?)");
+                }
+
+                String query2 = "INSERT INTO %s (parent_id, value) VALUES %s"
+                        .formatted(resolver.getTable() + "_" + column.columnName(),
+                                String.join(", ", sqlValues2));
+                try (Connection conn = dataSource.getConnection();
+                     PreparedStatement stmt = conn.prepareStatement(query2)) {
+                    int index = 1;
+
+                    for (Object element : set) {
+                        setValue(stmt, index, resolver.getPrimaryKey(), entity);
+                        index++;
+                        setValue(stmt, Reflections.getElementType(column.getField()), index, element);
+                        index++;
+                    }
+
+                    System.out.println(stmt);
+                    stmt.execute();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        return entity;
     }
 
     @Override
@@ -332,6 +346,14 @@ public class MySQLDatabase implements Database {
                     return column.getFullColumnName() + " = " + fullColumnName;
                 })
                 .collect(Collectors.joining(" AND "));
+    }
+
+    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
+        try {
+            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, null, value);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, ColumnAttribute attribute, Object value) {
