@@ -36,29 +36,35 @@ public class CollectionSupportTable {
 
             String query = ("CREATE TABLE IF NOT EXISTS %s ("
                     + "id INT NOT NULL AUTO_INCREMENT, "
-                    + "collection_id INT NOT NULL, "
+                    + "parent_id %s, "
                     + "`index` INT, "
                     + "value %s, "
-                    + "PRIMARY KEY (id))")
-                    .formatted(tableName, toSqlType(elementType));
-
+                    + "PRIMARY KEY (id), "
+                    + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
+                    .formatted(tableName, toSqlType(entityResolver.getPrimaryKey()), toSqlType(elementType),
+                            entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
             query(query);
         } else if (Reflections.isSet(collectionAttribute.type())) {
             Class<?> elementType = Reflections.getElementType(collectionAttribute.getField());
 
             String query = ("CREATE TABLE IF NOT EXISTS %s ("
                     + "id INT NOT NULL AUTO_INCREMENT, "
-                    + "collection_id INT NOT NULL, "
+                    + "parent_id %s, "
                     + "value %s, "
-                    + "PRIMARY KEY (id))")
-                    .formatted(tableName, toSqlType(elementType));
-
+                    + "PRIMARY KEY (id), "
+                    + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
+                    .formatted(tableName, toSqlType(entityResolver.getPrimaryKey()), toSqlType(elementType),
+                            entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
             query(query);
         }
     }
 
     private String toSqlType(Class<?> clazz) {
         return registry.getDataType(clazz).getSqlType(null);
+    }
+
+    private String toSqlType(ColumnAttribute columnAttribute) {
+        return registry.getDataType(columnAttribute.type()).getSqlType(columnAttribute);
     }
 
     private void query(String query) {

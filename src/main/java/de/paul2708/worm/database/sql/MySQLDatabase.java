@@ -15,8 +15,14 @@ import de.paul2708.worm.database.sql.helper.EntityCreator;
 import de.paul2708.worm.util.Reflections;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {
@@ -64,15 +70,9 @@ public class MySQLDatabase implements Database {
 
     @Override
     public void prepare(AttributeResolver resolver) {
-        // Create collection tables
-        for (ColumnAttribute column : resolver.getColumns()) {
-            if (column.isCollection()) {
-                new CollectionSupportTable(resolver, column, dataSource, columnsRegistry).create();
-            }
-        }
-
         // Create entity table
         String sqlColumns = resolver.getColumns().stream()
+                .filter(column -> !column.isCollection())
                 .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
@@ -97,9 +97,17 @@ public class MySQLDatabase implements Database {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
+            System.out.println(stmt);
             stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+
+        // Create collection tables
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (column.isCollection()) {
+                new CollectionSupportTable(resolver, column, dataSource, columnsRegistry).create();
+            }
         }
     }
 
