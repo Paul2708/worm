@@ -18,6 +18,9 @@ public class Collector {
     @Column("name")
     private String name;
 
+    @Column("age")
+    private int age;
+
     @Column("badges")
     private Set<String> badges;
 
@@ -30,6 +33,7 @@ public class Collector {
 
     public Collector(String name, Set<String> badges, List<Integer> primeNumbers) {
         this.name = name;
+        this.age = 42;
         this.badges = new HashSet<>(badges);
         this.primeNumbers = new ArrayList<>(primeNumbers);
     }

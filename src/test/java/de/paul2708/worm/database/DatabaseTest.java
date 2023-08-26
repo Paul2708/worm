@@ -329,4 +329,6 @@ public abstract class DatabaseTest {
         assertEquals(Set.of("Badge 02"), storedCollector.getBadges());
         assertEquals(List.of(2, 3), storedCollector.getPrimeNumbers());
     }
+
+    // TODO: Test entity with exactly one primary key
 }
