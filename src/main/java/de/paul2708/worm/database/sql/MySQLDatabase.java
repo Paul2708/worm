@@ -94,7 +94,6 @@ public class MySQLDatabase implements Database {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            System.out.println(stmt);
             stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -170,8 +169,6 @@ public class MySQLDatabase implements Database {
                 setValue(stmt, index, column, entity);
                 index++;
             }
-
-            System.out.println(stmt);
 
             stmt.execute();
 
@@ -253,8 +250,6 @@ public class MySQLDatabase implements Database {
                 .formatted(resolver.getFormattedTableNames(),
                         resolver.getPrimaryKey().getFullColumnName(),
                         resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
-
-        System.out.println(query);
 
         // Query database
         try (Connection conn = dataSource.getConnection();
@@ -341,8 +336,6 @@ public class MySQLDatabase implements Database {
     }
 
     private void query(String query) {
-        System.out.println(query);
-
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.execute();

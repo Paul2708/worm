@@ -101,7 +101,6 @@ public class CollectionSupportTable {
                     index++;
                 }
 
-                System.out.println(stmt);
                 stmt.execute();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -131,7 +130,6 @@ public class CollectionSupportTable {
                     index++;
                 }
 
-                System.out.println(stmt);
                 stmt.execute();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -145,8 +143,6 @@ public class CollectionSupportTable {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             setValue(stmt, 1, entityResolver.getPrimaryKey(), entity);
-
-            System.out.println(stmt);
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -226,8 +222,6 @@ public class CollectionSupportTable {
     }
 
     private void query(String query) {
-        System.out.println(query);
-
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.execute();
