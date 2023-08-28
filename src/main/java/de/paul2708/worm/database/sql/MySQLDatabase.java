@@ -8,7 +8,6 @@ import de.paul2708.worm.columns.CreatedAt;
 import de.paul2708.worm.columns.UpdatedAt;
 import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
-import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.sql.helper.CollectionSupportTable;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
@@ -19,7 +18,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {

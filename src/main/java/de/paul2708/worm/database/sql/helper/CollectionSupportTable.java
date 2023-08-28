@@ -112,7 +112,7 @@ public class CollectionSupportTable {
             }
 
             List<String> sqlValues2 = new ArrayList<>();
-            for (Object element : set) {
+            for (Object ignored : set) {
                 sqlValues2.add("(?, ?)");
             }
 
