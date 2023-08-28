@@ -3,6 +3,7 @@ package de.paul2708.worm.database.sql.helper;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.columns.properties.ForeignKeyProperty;
+import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.util.Reflections;
 
@@ -23,7 +24,9 @@ public class CollectionSupportTable {
 
     private final String tableName;
 
-    public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute, DataSource dataSource, ColumnsRegistry registry) {
+    private final ColumnMapper mapper;
+
+    public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute, DataSource dataSource, ColumnsRegistry registry, ColumnMapper mapper) {
         this.entityResolver = entityResolver;
         this.collectionAttribute = collectionAttribute;
 
@@ -31,6 +34,8 @@ public class CollectionSupportTable {
         this.registry = registry;
 
         this.tableName = entityResolver.getTable() + "_" + collectionAttribute.columnName();
+
+        this.mapper = mapper;
     }
 
     public void create() {

@@ -2,6 +2,7 @@ package de.paul2708.worm.database.sql.helper;
 
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import javax.sql.DataSource;
@@ -12,14 +13,14 @@ import java.util.Map;
 
 public final class EntityCreator {
 
-    public static Object fromColumns(Class<?> entityClass, ColumnsRegistry registry, DataSource dataSource, ResultSet resultSet) {
+    public static Object fromColumns(Class<?> entityClass, ColumnsRegistry registry, DataSource dataSource, ResultSet resultSet, ColumnMapper mapper) {
         AttributeResolver resolver = new AttributeResolver(entityClass);
 
         Map<String, Object> foreignFields = new HashMap<>();
 
         // Create foreign key objects
         for (ColumnAttribute foreignKey : resolver.getForeignKeys()) {
-            foreignFields.put(foreignKey.fieldName(), fromColumns(foreignKey.type(), registry, dataSource, resultSet));
+            foreignFields.put(foreignKey.fieldName(), fromColumns(foreignKey.type(), registry, dataSource, resultSet, mapper));
         }
 
         Map<String, Object> fieldValues = new HashMap<>();
@@ -36,7 +37,7 @@ public final class EntityCreator {
                 continue;
             }
 
-            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, dataSource, registry);
+            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, dataSource, registry, mapper);
             fieldValues.put(column.fieldName(), supportTable.get(resolver.createInstance(fieldValues)));
         }
 

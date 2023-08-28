@@ -11,7 +11,6 @@ import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.sql.helper.CollectionSupportTable;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
-import de.paul2708.worm.util.Reflections;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -35,6 +34,7 @@ public class MySQLDatabase implements Database {
 
     private DataSource dataSource;
     private ColumnsRegistry columnsRegistry;
+    private ColumnMapper mapper;
 
     public MySQLDatabase(String hostname, int port, String database, String username, String password) {
         this.hostname = hostname;
@@ -56,6 +56,8 @@ public class MySQLDatabase implements Database {
             registerColumnsRegistry(ColumnsRegistry.create());
         }
 
+        this.mapper = new ColumnMapper(columnsRegistry);
+
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl("jdbc:mysql://%s:%d/%s".formatted(hostname, port, database));
         config.setUsername(username);
@@ -72,7 +74,7 @@ public class MySQLDatabase implements Database {
         // Create entity table
         String sqlColumns = resolver.getColumns().stream()
                 .filter(column -> !column.isCollection())
-                .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
+                .map(column -> "%s %s".formatted(column.columnName(), mapper.toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
         String foreignKeyReferences = resolver.getForeignKeys().stream()
@@ -104,7 +106,7 @@ public class MySQLDatabase implements Database {
         // Create collection tables
         for (ColumnAttribute column : resolver.getColumns()) {
             if (column.isCollection()) {
-                new CollectionSupportTable(resolver, column, dataSource, columnsRegistry).create();
+                new CollectionSupportTable(resolver, column, dataSource, columnsRegistry, mapper).create();
             }
         }
     }
@@ -201,7 +203,7 @@ public class MySQLDatabase implements Database {
 
         // Save collections
         for (ColumnAttribute column : resolver.getColumns()) {
-            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, dataSource, columnsRegistry);
+            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, dataSource, columnsRegistry, mapper);
             supportTable.deleteExistingElements(entity);
             supportTable.insert(entity);
         }
@@ -226,7 +228,7 @@ public class MySQLDatabase implements Database {
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet, mapper);
                 result.add(instance);
             }
 
@@ -253,7 +255,7 @@ public class MySQLDatabase implements Database {
 
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet, mapper);
                 return Optional.of(instance);
             } else {
                 return Optional.empty();
@@ -267,7 +269,7 @@ public class MySQLDatabase implements Database {
     public void delete(AttributeResolver resolver, Object entity) {
         resolver.getColumns().stream()
                 .filter(ColumnAttribute::isCollection)
-                .map(column -> new CollectionSupportTable(resolver, column, dataSource, columnsRegistry))
+                .map(column -> new CollectionSupportTable(resolver, column, dataSource, columnsRegistry, mapper))
                 .forEach(table -> {
                     table.deleteExistingElements(entity);
                 });
@@ -312,15 +314,5 @@ public class MySQLDatabase implements Database {
         } else {
             setValue(statement, column.type(), index, column, column.getValue(entity));
         }
-    }
-
-    private String toSqlType(ColumnAttribute attribute) {
-        Class<?> type = attribute.type();
-
-        if (Reflections.isSet(type) || Reflections.isList(type)) {
-            return "INT";
-        }
-
-        return columnsRegistry.getDataType(type).getSqlType(attribute);
     }
 }
