@@ -27,6 +27,10 @@ public final class StringColumnDataType implements ColumnDataType<String> {
 
     @Override
     public String getSqlType(ColumnAttribute attribute) {
+        if (attribute == null) {
+            return "TEXT";
+        }
+
         if (attribute.hasProperty(LengthRestrictedProperty.class)) {
             int length = attribute.getProperty(LengthRestrictedProperty.class).length();
 
