@@ -107,19 +107,12 @@ public class MySQLDatabase implements Database {
         }
     }
 
-    public void registerColumnsRegistry(ColumnsRegistry registry) {
+    private void registerColumnsRegistry(ColumnsRegistry registry) {
         if (registry == null) {
             throw new IllegalArgumentException("Registry that was provided is null");
         }
         this.columnsRegistry = registry;
         this.columnsRegistry.init();
-    }
-
-    public void registerDataType(ColumnDataType<?> dataType) {
-        if (dataType == null) {
-            throw new IllegalArgumentException("Data type that was provided is null");
-        }
-        this.columnsRegistry.register(dataType);
     }
 
     @Override
@@ -327,18 +320,5 @@ public class MySQLDatabase implements Database {
         }
 
         return columnsRegistry.getDataType(type).getSqlType(attribute);
-    }
-
-    private String toSqlType(Class<?> type) {
-        return columnsRegistry.getDataType(type).getSqlType(null);
-    }
-
-    private void query(String query) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.execute();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

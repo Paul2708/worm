@@ -180,11 +180,6 @@ public class CollectionSupportTable {
         }
     }
 
-    public String getJoinClause() {
-        return "JOIN %s ON %s.parent_id = %s"
-                .formatted(tableName, tableName, entityResolver.getPrimaryKey().getFullColumnName());
-    }
-
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
         try {
             registry.getDataType(expectedType).unsafeTo(statement, index, null, value);
