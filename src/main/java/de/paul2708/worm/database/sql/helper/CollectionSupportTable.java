@@ -85,7 +85,7 @@ public class CollectionSupportTable {
             }
             List<String> sqlValues2 = new ArrayList<>();
             for (int i = 0; i < list.size(); i++) {
-                sqlValues2.add("(?, " + i + ", ?)");
+                sqlValues2.add("(?, %d, ?)".formatted(i));
             }
 
             String query2 = "INSERT INTO %s (parent_id, `index`, value) VALUES %s"
@@ -172,8 +172,7 @@ public class CollectionSupportTable {
         return null;
     }
 
-    private Object getValue(ResultSet resultSet,
-                                   String column, Class<?> expectedType) {
+    private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
         try {
             return registry.getDataType(expectedType).from(resultSet, null, column);
         } catch (SQLException e) {
