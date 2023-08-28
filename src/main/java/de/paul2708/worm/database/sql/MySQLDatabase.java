@@ -277,6 +277,13 @@ public class MySQLDatabase implements Database {
 
     @Override
     public void delete(AttributeResolver resolver, Object entity) {
+        resolver.getColumns().stream()
+                .filter(ColumnAttribute::isCollection)
+                .map(column -> new CollectionSupportTable(resolver, column, dataSource, columnsRegistry))
+                .forEach(table -> {
+                    table.deleteExistingElements(entity);
+                });
+
         String query = "DELETE FROM %s WHERE %s = ?"
                 .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
