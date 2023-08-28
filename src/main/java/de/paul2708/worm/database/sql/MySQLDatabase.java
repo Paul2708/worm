@@ -152,8 +152,7 @@ public class MySQLDatabase implements Database {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
-                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)
-                        || column.isCollection()) {
+                if (column.isAutoTimestamp() || column.isCollection()) {
                     continue;
                 }
 
@@ -161,8 +160,7 @@ public class MySQLDatabase implements Database {
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
-                if (column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class)
-                        || column.isCollection()) {
+                if (column.isAutoTimestamp() || column.isCollection()) {
                     continue;
                 }
 
@@ -174,7 +172,7 @@ public class MySQLDatabase implements Database {
 
             // Fetch default column values
             List<ColumnAttribute> timestampColumns = resolver.getColumns().stream()
-                    .filter(column -> column.hasAnnotation(CreatedAt.class) || column.hasAnnotation(UpdatedAt.class))
+                    .filter(ColumnAttribute::isAutoTimestamp)
                     .sorted()
                     .toList();
 

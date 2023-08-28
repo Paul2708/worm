@@ -124,6 +124,10 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
         return Reflections.isSet(type) || Reflections.isList(type);
     }
 
+    public boolean isAutoTimestamp() {
+        return hasAnnotation(CreatedAt.class) || hasAnnotation(UpdatedAt.class);
+    }
+
     @Override
     public int compareTo(ColumnAttribute other) {
         if (hasProperty(PrimaryKeyProperty.class) && other.hasProperty(PrimaryKeyProperty.class)) {
