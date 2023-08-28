@@ -153,7 +153,7 @@ public class MySQLDatabase implements Database {
                     continue;
                 }
 
-                setValue(stmt, index, column, entity);
+                mapper.setParameterValue(column, entity, stmt, index);
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
@@ -161,7 +161,7 @@ public class MySQLDatabase implements Database {
                     continue;
                 }
 
-                setValue(stmt, index, column, entity);
+                mapper.setParameterValue(column, entity, stmt, index);
                 index++;
             }
 
@@ -181,8 +181,7 @@ public class MySQLDatabase implements Database {
 
                 try (Connection connection = dataSource.getConnection();
                      PreparedStatement statement = connection.prepareStatement(timestampQuery)) {
-                    setValue(statement, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
-                            resolver.getPrimaryKey().getValue(entity));
+                    mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
 
                     ResultSet resultSet = statement.executeQuery();
 
@@ -249,7 +248,8 @@ public class MySQLDatabase implements Database {
         // Query database
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(), key);
+            mapper.setDirectParameterValue(resolver.getPrimaryKey(), key, stmt, 1);
+
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -279,8 +279,7 @@ public class MySQLDatabase implements Database {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
-                    resolver.getPrimaryKey().getValue(entity));
+            mapper.setParameterValue(resolver.getPrimaryKey(), entity, stmt, 1);
             stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -295,24 +294,5 @@ public class MySQLDatabase implements Database {
                     return column.getFullColumnName() + " = " + fullColumnName;
                 })
                 .collect(Collectors.joining(" AND "));
-    }
-
-    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, ColumnAttribute attribute, Object value) {
-        try {
-            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, attribute, value);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void setValue(PreparedStatement statement, int index, ColumnAttribute column, Object entity) {
-        if (column.isForeignKey()) {
-            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey();
-            Object value = foreignPrimaryKey.getValue(column.getValue(entity));
-
-            setValue(statement, value.getClass(), index, column, value);
-        } else {
-            setValue(statement, column.type(), index, column, column.getValue(entity));
-        }
     }
 }

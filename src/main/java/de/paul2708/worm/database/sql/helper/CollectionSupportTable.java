@@ -49,7 +49,7 @@ public class CollectionSupportTable {
                     + "value %s, "
                     + "PRIMARY KEY (id), "
                     + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
-                    .formatted(tableName, toSqlType(entityResolver.getPrimaryKey()), toSqlType(elementType),
+                    .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), mapper.toSqlType(elementType),
                             entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
             query(query);
         } else if (Reflections.isSet(collectionAttribute.type())) {
@@ -61,7 +61,7 @@ public class CollectionSupportTable {
                     + "value %s, "
                     + "PRIMARY KEY (id), "
                     + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
-                    .formatted(tableName, toSqlType(entityResolver.getPrimaryKey()), toSqlType(elementType),
+                    .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), mapper.toSqlType(elementType),
                             entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
             query(query);
         }
@@ -74,7 +74,7 @@ public class CollectionSupportTable {
 
             try (Connection conn = dataSource.getConnection();
                  PreparedStatement stmt = conn.prepareStatement(query)) {
-                setValue(stmt, 1, entityResolver.getPrimaryKey(), entity);
+                mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, 1);
                 stmt.execute();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -100,9 +100,10 @@ public class CollectionSupportTable {
                  PreparedStatement stmt = conn.prepareStatement(query2)) {
                 int index = 1;
                 for (int i = 0; i < list.size(); i++) {
-                    setValue(stmt, index, entityResolver.getPrimaryKey(), entity);
+                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, index);
                     index++;
-                    setValue(stmt, Reflections.getElementType(collectionAttribute.getField()), index, list.get(i));
+                    mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
+                            list.get(i), stmt, index);
                     index++;
                 }
 
@@ -129,9 +130,10 @@ public class CollectionSupportTable {
                 int index = 1;
 
                 for (Object element : set) {
-                    setValue(stmt, index, entityResolver.getPrimaryKey(), entity);
+                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, index);
                     index++;
-                    setValue(stmt, Reflections.getElementType(collectionAttribute.getField()), index, element);
+                    mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
+                            element, stmt, index);
                     index++;
                 }
 
@@ -147,7 +149,7 @@ public class CollectionSupportTable {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, 1, entityResolver.getPrimaryKey(), entity);
+            mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, 1);
 
             ResultSet resultSet = stmt.executeQuery();
 
@@ -183,41 +185,6 @@ public class CollectionSupportTable {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
-        try {
-            registry.getDataType(expectedType).unsafeTo(statement, index, null, value);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void setValue(PreparedStatement statement, int index, ColumnAttribute column, Object entity) {
-        if (column.isForeignKey()) {
-            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey();
-            Object value = foreignPrimaryKey.getValue(column.getValue(entity));
-
-            setValue(statement, value.getClass(), index, column, value);
-        } else {
-            setValue(statement, column.type(), index, column, column.getValue(entity));
-        }
-    }
-
-    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, ColumnAttribute attribute, Object value) {
-        try {
-            registry.getDataType(expectedType).unsafeTo(statement, index, attribute, value);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String toSqlType(Class<?> clazz) {
-        return registry.getDataType(clazz).getSqlType(null);
-    }
-
-    private String toSqlType(ColumnAttribute columnAttribute) {
-        return registry.getDataType(columnAttribute.type()).getSqlType(columnAttribute);
     }
 
     private void query(String query) {
