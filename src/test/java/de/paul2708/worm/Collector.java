@@ -43,7 +43,7 @@ public class Collector {
     }
 
     public void removePrime(int prime) {
-        this.primeNumbers.remove(prime);
+        this.primeNumbers.removeIf(value -> value == prime);
     }
 
     public Set<String> getBadges() {
