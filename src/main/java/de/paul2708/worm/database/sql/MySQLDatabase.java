@@ -236,7 +236,7 @@ public class MySQLDatabase implements Database {
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet);
                 result.add(instance);
             }
 
@@ -250,8 +250,11 @@ public class MySQLDatabase implements Database {
     public Optional<Object> findById(AttributeResolver resolver, Object key) {
         // Build query
         String query = "SELECT * FROM %s WHERE %s = ?%s"
-                .formatted(resolver.getFormattedTableNames(), resolver.getPrimaryKey().getFullColumnName(),
+                .formatted(resolver.getFormattedTableNames(),
+                        resolver.getPrimaryKey().getFullColumnName(),
                         resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
+
+        System.out.println(query);
 
         // Query database
         try (Connection conn = dataSource.getConnection();
@@ -262,7 +265,7 @@ public class MySQLDatabase implements Database {
 
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet);
                 return Optional.of(instance);
             } else {
                 return Optional.empty();

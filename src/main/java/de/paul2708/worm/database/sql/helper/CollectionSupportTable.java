@@ -9,10 +9,9 @@ import de.paul2708.worm.util.Reflections;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class CollectionSupportTable {
 
@@ -131,6 +130,57 @@ public class CollectionSupportTable {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public Object get(Object entity) {
+        String query = "SELECT * FROM " + tableName + " WHERE parent_id = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            setValue(stmt, 1, entityResolver.getPrimaryKey(), entity);
+
+            System.out.println(stmt);
+
+            ResultSet resultSet = stmt.executeQuery();
+
+            if (Reflections.isList(collectionAttribute.type())) {
+                List<Object> list = new ArrayList<>();
+
+                while (resultSet.next()) {
+                    int index = resultSet.getInt("index");
+                    Object value = getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
+                    list.add(index, value);
+                }
+
+                return list;
+            } else if (Reflections.isSet(collectionAttribute.type())) {
+                Set<Object> set = new HashSet<>();
+
+                while (resultSet.next()) {
+                    Object value = getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
+                    set.add(value);
+                }
+
+                return set;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
+    private Object getValue(ResultSet resultSet,
+                                   String column, Class<?> expectedType) {
+        try {
+            return registry.getDataType(expectedType).from(resultSet, null, column);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String getJoinClause() {
+        return "JOIN %s ON %s.parent_id = %s"
+                .formatted(tableName, tableName, entityResolver.getPrimaryKey().getFullColumnName());
     }
 
     private void setValue(PreparedStatement statement, Class<?> expectedType, int index, Object value) {
