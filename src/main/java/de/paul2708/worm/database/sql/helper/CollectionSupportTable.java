@@ -80,6 +80,9 @@ public class CollectionSupportTable {
     public void insert(Object entity) {
         if (Reflections.isList(collectionAttribute.type())) {
             List<?> list = (List<?>) collectionAttribute.getValue(entity);
+            if (list.isEmpty()) {
+                return;
+            }
             List<String> sqlValues2 = new ArrayList<>();
             for (int i = 0; i < list.size(); i++) {
                 sqlValues2.add("(?, " + i + ", ?)");
@@ -105,6 +108,10 @@ public class CollectionSupportTable {
             }
         } else if (Reflections.isSet(collectionAttribute.type())) {
             Set<?> set = (Set<?>) collectionAttribute.getValue(entity);
+            if (set.isEmpty()) {
+                return;
+            }
+
             List<String> sqlValues2 = new ArrayList<>();
             for (Object element : set) {
                 sqlValues2.add("(?, ?)");
