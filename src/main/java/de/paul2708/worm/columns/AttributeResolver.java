@@ -1,9 +1,9 @@
 package de.paul2708.worm.columns;
 
 import de.paul2708.worm.columns.properties.*;
+import de.paul2708.worm.util.Reflections;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -100,51 +100,8 @@ public class AttributeResolver {
         return attribute;
     }
 
-    public Object getValueByColumn(Object object, String column) {
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Column.class)) {
-                if (field.getAnnotation(Column.class).value().equals(column)) {
-                    try {
-                        field.setAccessible(true);
-                        return field.get(object);
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    public Object getValueByColumn(Object object, ColumnAttribute column) {
-        return getValueByColumn(object, column.columnName());
-    }
-
-    public void setField(String fieldName, Object object, Object value) {
-        try {
-            Field field = object.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-
-            field.set(object, value);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public Object createInstance(Map<String, Object> fieldValues) {
-        try {
-            Object object = clazz.getConstructor().newInstance();
-
-            for (Map.Entry<String, Object> entry : fieldValues.entrySet()) {
-                setField(entry.getKey(), object, entry.getValue());
-            }
-
-            return object;
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                 NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+        return Reflections.createInstance(clazz, fieldValues);
     }
 
     public Class<?> getTargetClass() {

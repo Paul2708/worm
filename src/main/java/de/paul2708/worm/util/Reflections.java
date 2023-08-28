@@ -1,8 +1,10 @@
 package de.paul2708.worm.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Reflections {
@@ -38,10 +40,39 @@ public class Reflections {
         return hasInterface(implClass.getSuperclass(), interfaceClass);
     }
 
-    public static Field getField(Class<?> clazz, String field) {
+    public static Field getField(Class<?> clazz, String fieldName) {
         try {
-            return clazz.getDeclaredField(field);
+            Field field = clazz.getDeclaredField(fieldName);
+
+            field.setAccessible(true);
+            return field;
         } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void setFieldValue(String fieldName, Object object, Object value) {
+        try {
+            Field field = object.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+
+            field.set(object, value);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Object createInstance(Class<?> clazz, Map<String, Object> fieldValues) {
+        try {
+            Object object = clazz.getConstructor().newInstance();
+
+            for (Map.Entry<String, Object> entry : fieldValues.entrySet()) {
+                setFieldValue(entry.getKey(), object, entry.getValue());
+            }
+
+            return object;
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }

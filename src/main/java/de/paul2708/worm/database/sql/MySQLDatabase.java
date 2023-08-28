@@ -276,7 +276,7 @@ public class MySQLDatabase implements Database {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
-                    resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
+                    resolver.getPrimaryKey().getValue(entity));
             stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
