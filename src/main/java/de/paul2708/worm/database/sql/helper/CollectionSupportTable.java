@@ -20,7 +20,6 @@ public class CollectionSupportTable {
     private final AttributeResolver entityResolver;
     private final ColumnAttribute collectionAttribute;
 
-    private final DataSource dataSource;
     private final ColumnsRegistry registry;
 
     private final String tableName;
@@ -29,12 +28,11 @@ public class CollectionSupportTable {
     private final ConnectionContext context;
 
     public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute,
-                                  DataSource dataSource, ColumnsRegistry registry, ColumnMapper mapper,
+                                  ColumnsRegistry registry, ColumnMapper mapper,
                                   ConnectionContext context) {
         this.entityResolver = entityResolver;
         this.collectionAttribute = collectionAttribute;
 
-        this.dataSource = dataSource;
         this.registry = registry;
 
         this.tableName = entityResolver.getTable() + "_" + collectionAttribute.columnName();
@@ -45,6 +43,7 @@ public class CollectionSupportTable {
 
     public void create() {
         String query = null;
+
         if (Reflections.isList(collectionAttribute.type())) {
             Class<?> elementType = Reflections.getElementType(collectionAttribute.getField());
 
@@ -78,57 +77,56 @@ public class CollectionSupportTable {
     }
 
     public void deleteExistingElements(Object entity) {
-        if (collectionAttribute.isCollection()) {
-            String query = "DELETE %s FROM %s WHERE parent_id = ?"
-                    .formatted(tableName, tableName);
+        String query = "DELETE %s FROM %s WHERE parent_id = ?"
+                .formatted(tableName, tableName);
 
-            context.query(query, statement -> {
-                mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, 1);
-            });
-        }
+        context.query(query, statement -> {
+            mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, 1);
+        });
     }
 
     public void insert(Object entity) {
         if (Reflections.isList(collectionAttribute.type())) {
             List<?> list = (List<?>) collectionAttribute.getValue(entity);
+
             if (list.isEmpty()) {
                 return;
             }
-            List<String> sqlValues2 = new ArrayList<>();
+
+            List<String> sqlValues = new ArrayList<>();
             for (int i = 0; i < list.size(); i++) {
-                sqlValues2.add("(?, %d, ?)".formatted(i));
+                sqlValues.add("(?, %d, ?)".formatted(i));
             }
 
-            String query2 = "INSERT INTO %s (parent_id, `index`, value) VALUES %s"
-                    .formatted(tableName,
-                            String.join(", ", sqlValues2));
+            String query = "INSERT INTO %s (parent_id, `index`, value) VALUES %s"
+                    .formatted(tableName, String.join(", ", sqlValues));
 
-            context.query(query2, statement -> {
+            context.query(query, statement -> {
                 int index = 1;
-                for (int i = 0; i < list.size(); i++) {
+                for (Object object : list) {
                     mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, index);
                     index++;
                     mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
-                            list.get(i), statement, index);
+                            object, statement, index);
                     index++;
                 }
             });
         } else if (Reflections.isSet(collectionAttribute.type())) {
             Set<?> set = (Set<?>) collectionAttribute.getValue(entity);
+
             if (set.isEmpty()) {
                 return;
             }
 
-            List<String> sqlValues2 = new ArrayList<>();
+            List<String> sqlValues = new ArrayList<>();
             for (Object ignored : set) {
-                sqlValues2.add("(?, ?)");
+                sqlValues.add("(?, ?)");
             }
 
-            String query2 = "INSERT INTO %s (parent_id, value) VALUES %s"
-                    .formatted(tableName,
-                            String.join(", ", sqlValues2));
+            String query = "INSERT INTO %s (parent_id, value) VALUES %s"
+                    .formatted(tableName, String.join(", ", sqlValues));
 
-            context.query(query2, statement -> {
+            context.query(query, statement -> {
                 int index = 1;
 
                 for (Object element : set) {

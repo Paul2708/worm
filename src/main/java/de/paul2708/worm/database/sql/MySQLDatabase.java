@@ -30,7 +30,6 @@ public class MySQLDatabase implements Database {
     private final String username;
     private final String password;
 
-    private DataSource dataSource;
     private ColumnsRegistry columnsRegistry;
     private ColumnMapper mapper;
 
@@ -65,8 +64,7 @@ public class MySQLDatabase implements Database {
         config.setMaximumPoolSize(5);
         config.setMinimumIdle(2);
 
-        this.dataSource = new HikariDataSource(config);
-
+        DataSource dataSource = new HikariDataSource(config);
         this.context = new ConnectionContext(dataSource);
     }
 
@@ -102,7 +100,7 @@ public class MySQLDatabase implements Database {
         // Create collection tables
         for (ColumnAttribute column : resolver.getColumns()) {
             if (column.isCollection()) {
-                new CollectionSupportTable(resolver, column, dataSource, columnsRegistry, mapper, context).create();
+                new CollectionSupportTable(resolver, column, columnsRegistry, mapper, context).create();
             }
         }
     }
@@ -180,7 +178,11 @@ public class MySQLDatabase implements Database {
 
         // Save collections
         for (ColumnAttribute column : resolver.getColumns()) {
-            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, dataSource, columnsRegistry, mapper, context);
+            if (!column.isCollection()) {
+                continue;
+            }
+
+            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, columnsRegistry, mapper, context);
             supportTable.deleteExistingElements(entity);
             supportTable.insert(entity);
         }
@@ -202,8 +204,7 @@ public class MySQLDatabase implements Database {
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource,
-                        resultSet, mapper, context);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet, mapper, context);
                 result.add(instance);
             }
 
@@ -225,7 +226,7 @@ public class MySQLDatabase implements Database {
         }, resultSet -> {
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource,
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry,
                         resultSet, mapper, context);
                 return Optional.of(instance);
             } else {
@@ -238,7 +239,7 @@ public class MySQLDatabase implements Database {
     public void delete(AttributeResolver resolver, Object entity) {
         resolver.getColumns().stream()
                 .filter(ColumnAttribute::isCollection)
-                .map(column -> new CollectionSupportTable(resolver, column, dataSource, columnsRegistry, mapper, context))
+                .map(column -> new CollectionSupportTable(resolver, column, columnsRegistry, mapper, context))
                 .forEach(table -> {
                     table.deleteExistingElements(entity);
                 });
