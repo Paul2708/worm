@@ -2,17 +2,18 @@ package de.paul2708.worm.database.sql.helper;
 
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.sql.ColumnMapper;
+import de.paul2708.worm.database.sql.context.ConnectionContext;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.util.Reflections;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class CollectionSupportTable {
 
@@ -25,8 +26,11 @@ public class CollectionSupportTable {
     private final String tableName;
 
     private final ColumnMapper mapper;
+    private final ConnectionContext context;
 
-    public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute, DataSource dataSource, ColumnsRegistry registry, ColumnMapper mapper) {
+    public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute,
+                                  DataSource dataSource, ColumnsRegistry registry, ColumnMapper mapper,
+                                  ConnectionContext context) {
         this.entityResolver = entityResolver;
         this.collectionAttribute = collectionAttribute;
 
@@ -36,13 +40,15 @@ public class CollectionSupportTable {
         this.tableName = entityResolver.getTable() + "_" + collectionAttribute.columnName();
 
         this.mapper = mapper;
+        this.context = context;
     }
 
     public void create() {
+        String query = null;
         if (Reflections.isList(collectionAttribute.type())) {
             Class<?> elementType = Reflections.getElementType(collectionAttribute.getField());
 
-            String query = ("CREATE TABLE IF NOT EXISTS %s ("
+            query = ("CREATE TABLE IF NOT EXISTS %s ("
                     + "id INT NOT NULL AUTO_INCREMENT, "
                     + "parent_id %s, "
                     + "`index` INT, "
@@ -51,11 +57,10 @@ public class CollectionSupportTable {
                     + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
                     .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), mapper.toSqlType(elementType),
                             entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
-            query(query);
         } else if (Reflections.isSet(collectionAttribute.type())) {
             Class<?> elementType = Reflections.getElementType(collectionAttribute.getField());
 
-            String query = ("CREATE TABLE IF NOT EXISTS %s ("
+            query = ("CREATE TABLE IF NOT EXISTS %s ("
                     + "id INT NOT NULL AUTO_INCREMENT, "
                     + "parent_id %s, "
                     + "value %s, "
@@ -63,8 +68,13 @@ public class CollectionSupportTable {
                     + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
                     .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), mapper.toSqlType(elementType),
                             entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
-            query(query);
         }
+
+        if (query == null) {
+            throw new RuntimeException("Failed to create collection table for %s".formatted(collectionAttribute));
+        }
+
+        context.query(query);
     }
 
     public void deleteExistingElements(Object entity) {
@@ -72,13 +82,9 @@ public class CollectionSupportTable {
             String query = "DELETE %s FROM %s WHERE parent_id = ?"
                     .formatted(tableName, tableName);
 
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query)) {
-                mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, 1);
-                stmt.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            context.query(query, statement -> {
+                mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, 1);
+            });
         }
     }
 
@@ -96,21 +102,17 @@ public class CollectionSupportTable {
             String query2 = "INSERT INTO %s (parent_id, `index`, value) VALUES %s"
                     .formatted(tableName,
                             String.join(", ", sqlValues2));
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query2)) {
+
+            context.query(query2, statement -> {
                 int index = 1;
                 for (int i = 0; i < list.size(); i++) {
-                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, index);
+                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, index);
                     index++;
                     mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
-                            list.get(i), stmt, index);
+                            list.get(i), statement, index);
                     index++;
                 }
-
-                stmt.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            });
         } else if (Reflections.isSet(collectionAttribute.type())) {
             Set<?> set = (Set<?>) collectionAttribute.getValue(entity);
             if (set.isEmpty()) {
@@ -125,34 +127,27 @@ public class CollectionSupportTable {
             String query2 = "INSERT INTO %s (parent_id, value) VALUES %s"
                     .formatted(tableName,
                             String.join(", ", sqlValues2));
-            try (Connection conn = dataSource.getConnection();
-                 PreparedStatement stmt = conn.prepareStatement(query2)) {
+
+            context.query(query2, statement -> {
                 int index = 1;
 
                 for (Object element : set) {
-                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, index);
+                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, index);
                     index++;
                     mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
-                            element, stmt, index);
+                            element, statement, index);
                     index++;
                 }
-
-                stmt.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            });
         }
     }
 
     public Object get(Object entity) {
         String query = "SELECT * FROM " + tableName + " WHERE parent_id = ?";
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, stmt, 1);
-
-            ResultSet resultSet = stmt.executeQuery();
-
+        return context.query(query, statement -> {
+            mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, 1);
+        }, resultSet -> {
             if (Reflections.isList(collectionAttribute.type())) {
                 List<Object> list = new ArrayList<>();
 
@@ -173,24 +168,14 @@ public class CollectionSupportTable {
 
                 return set;
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return null;
+
+            throw new RuntimeException("Failed to get collection attribute %s".formatted(collectionAttribute));
+        });
     }
 
     private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
         try {
             return registry.getDataType(expectedType).from(resultSet, null, column);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void query(String query) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.execute();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
