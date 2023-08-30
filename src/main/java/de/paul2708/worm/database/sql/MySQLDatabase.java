@@ -8,15 +8,13 @@ import de.paul2708.worm.columns.CreatedAt;
 import de.paul2708.worm.columns.UpdatedAt;
 import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
+import de.paul2708.worm.database.sql.context.ConnectionContext;
+import de.paul2708.worm.database.sql.context.SQLFunction;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.sql.helper.CollectionSupportTable;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,6 +34,8 @@ public class MySQLDatabase implements Database {
     private ColumnsRegistry columnsRegistry;
     private ColumnMapper mapper;
 
+    private ConnectionContext context;
+
     public MySQLDatabase(String hostname, int port, String database, String username, String password) {
         this.hostname = hostname;
         this.port = port;
@@ -52,9 +52,8 @@ public class MySQLDatabase implements Database {
             throw new RuntimeException(e);
         }
 
-        if (this.columnsRegistry == null) {
-            registerColumnsRegistry(ColumnsRegistry.create());
-        }
+        this.columnsRegistry = ColumnsRegistry.create();
+        this.columnsRegistry.init();
 
         this.mapper = new ColumnMapper(columnsRegistry);
 
@@ -67,6 +66,8 @@ public class MySQLDatabase implements Database {
         config.setMinimumIdle(2);
 
         this.dataSource = new HikariDataSource(config);
+
+        this.context = new ConnectionContext(dataSource);
     }
 
     @Override
@@ -96,12 +97,7 @@ public class MySQLDatabase implements Database {
             query += ")";
         }
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.execute();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        context.query(query);
 
         // Create collection tables
         for (ColumnAttribute column : resolver.getColumns()) {
@@ -109,14 +105,6 @@ public class MySQLDatabase implements Database {
                 new CollectionSupportTable(resolver, column, dataSource, columnsRegistry, mapper).create();
             }
         }
-    }
-
-    private void registerColumnsRegistry(ColumnsRegistry registry) {
-        if (registry == null) {
-            throw new IllegalArgumentException("Registry that was provided is null");
-        }
-        this.columnsRegistry = registry;
-        this.columnsRegistry.init();
     }
 
     @Override
@@ -145,15 +133,14 @@ public class MySQLDatabase implements Database {
         String query = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s"
                 .formatted(resolver.getTable(), sqlColumns, sqlValues, sqlUpdate);
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
+        context.query(query, statement -> {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
                 if (column.isAutoTimestamp() || column.isCollection()) {
                     continue;
                 }
 
-                mapper.setParameterValue(column, entity, stmt, index);
+                mapper.setParameterValue(column, entity, statement, index);
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
@@ -161,43 +148,34 @@ public class MySQLDatabase implements Database {
                     continue;
                 }
 
-                mapper.setParameterValue(column, entity, stmt, index);
+                mapper.setParameterValue(column, entity, statement, index);
                 index++;
             }
+        });
 
-            stmt.execute();
+        // Fetch default column values
+        List<ColumnAttribute> timestampColumns = resolver.getColumns().stream()
+                .filter(ColumnAttribute::isAutoTimestamp)
+                .sorted()
+                .toList();
 
-            // Fetch default column values
-            List<ColumnAttribute> timestampColumns = resolver.getColumns().stream()
-                    .filter(ColumnAttribute::isAutoTimestamp)
-                    .sorted()
-                    .toList();
+        if (!timestampColumns.isEmpty()) {
+            String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
+                    .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
+                            resolver.getTable(),
+                            resolver.getPrimaryKey().columnName());
 
-            if (!timestampColumns.isEmpty()) {
-                String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
-                        .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
-                                resolver.getTable(),
-                                resolver.getPrimaryKey().columnName());
-
-                try (Connection connection = dataSource.getConnection();
-                     PreparedStatement statement = connection.prepareStatement(timestampQuery)) {
-                    mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
-
-                    ResultSet resultSet = statement.executeQuery();
-
-                    if (resultSet.next()) {
-                        for (ColumnAttribute column : timestampColumns) {
-                            Object timestamp = columnsRegistry.getDataType(column.type()).from(resultSet, column,
-                                    column.columnName());
-                            column.setValue(entity, timestamp);
-                        }
+            context.query(timestampQuery, statement -> {
+                mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
+            }, resultSet -> {
+                if (resultSet.next()) {
+                    for (ColumnAttribute column : timestampColumns) {
+                        Object timestamp = columnsRegistry.getDataType(column.type()).from(resultSet, column,
+                                column.columnName());
+                        column.setValue(entity, timestamp);
                     }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
                 }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            });
         }
 
         // Save collections
@@ -220,21 +198,17 @@ public class MySQLDatabase implements Database {
                         resolver.getForeignKeys().isEmpty() ? "" : " WHERE " + buildConditions(resolver));
 
         // Query database
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            ResultSet resultSet = stmt.executeQuery();
-
+        return context.query(query, (SQLFunction<Collection<Object>>) resultSet -> {
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet, mapper);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource,
+                        resultSet, mapper);
                 result.add(instance);
             }
 
             return result;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     @Override
@@ -246,23 +220,18 @@ public class MySQLDatabase implements Database {
                         resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
         // Query database
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            mapper.setDirectParameterValue(resolver.getPrimaryKey(), key, stmt, 1);
-
-
-            ResultSet resultSet = stmt.executeQuery();
-
+        return context.query(query, statement -> {
+            mapper.setDirectParameterValue(resolver.getPrimaryKey(), key, statement, 1);
+        }, resultSet -> {
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet, mapper);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource,
+                        resultSet, mapper);
                 return Optional.of(instance);
             } else {
                 return Optional.empty();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     @Override
@@ -277,13 +246,9 @@ public class MySQLDatabase implements Database {
         String query = "DELETE FROM %s WHERE %s = ?"
                 .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            mapper.setParameterValue(resolver.getPrimaryKey(), entity, stmt, 1);
-            stmt.execute();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        context.query(query, statement -> {
+            mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
+        });
     }
 
     private String buildConditions(AttributeResolver resolver) {
