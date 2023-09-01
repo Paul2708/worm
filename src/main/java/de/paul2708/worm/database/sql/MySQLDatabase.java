@@ -30,7 +30,6 @@ public class MySQLDatabase implements Database {
     private final String username;
     private final String password;
 
-    private ColumnsRegistry columnsRegistry;
     private ColumnMapper mapper;
 
     private ConnectionContext context;
@@ -51,8 +50,8 @@ public class MySQLDatabase implements Database {
             throw new RuntimeException(e);
         }
 
-        this.columnsRegistry = ColumnsRegistry.create();
-        this.columnsRegistry.init();
+        ColumnsRegistry columnsRegistry = ColumnsRegistry.create();
+        columnsRegistry.init();
 
         this.mapper = new ColumnMapper(columnsRegistry);
 
