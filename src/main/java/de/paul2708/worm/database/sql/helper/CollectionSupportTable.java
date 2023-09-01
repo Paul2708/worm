@@ -74,7 +74,7 @@ public class CollectionSupportTable {
 
         String collectionColumns = String.join(", ", collectionProvider.getTableCreationColumns(collectionAttribute, mapper)
                 .keySet());
-        String collectionParameters = IntStream.range(0, collectionProvider.numberOfParameters(entity, collectionAttribute) + 1)
+        String collectionParameters = IntStream.range(0, collectionProvider.numberOfParameters(collectionAttribute, mapper) + 1)
                 .mapToObj(i -> "?")
                 .collect(Collectors.joining(", "));
         String allCollectionParameters = IntStream.range(0, collectionProvider.size(entity, collectionAttribute))

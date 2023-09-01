@@ -19,11 +19,6 @@ public class SetProvider implements CollectionProvider {
     }
 
     @Override
-    public int numberOfParameters(Object entity, ColumnAttribute columnAttribute) {
-        return 1;
-    }
-
-    @Override
     public int size(Object entity, ColumnAttribute columnAttribute) {
         return ((Set<Object>) columnAttribute.getValue(entity)).size();
     }

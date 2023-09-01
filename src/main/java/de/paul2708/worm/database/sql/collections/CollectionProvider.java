@@ -11,7 +11,9 @@ public interface CollectionProvider {
 
     SortedMap<String, String> getTableCreationColumns(ColumnAttribute collectionAttribute, ColumnMapper mapper);
 
-    int numberOfParameters(Object entity, ColumnAttribute columnAttribute);
+    default int numberOfParameters(ColumnAttribute columnAttribute, ColumnMapper mapper) {
+        return getTableCreationColumns(columnAttribute, mapper).keySet().size();
+    }
 
     int size(Object entity, ColumnAttribute columnAttribute);
 

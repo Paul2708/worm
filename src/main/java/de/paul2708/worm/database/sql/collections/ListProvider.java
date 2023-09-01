@@ -23,11 +23,6 @@ public class ListProvider implements CollectionProvider {
     }
 
     @Override
-    public int numberOfParameters(Object entity, ColumnAttribute columnAttribute) {
-        return 2;
-    }
-
-    @Override
     public int size(Object entity, ColumnAttribute columnAttribute) {
         return ((List<Object>) columnAttribute.getValue(entity)).size();
     }
