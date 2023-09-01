@@ -3,13 +3,11 @@ package de.paul2708.worm.database.sql.helper;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.ColumnMapper;
+import de.paul2708.worm.database.sql.collections.CollectionProvider;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.util.Reflections;
 
-import javax.sql.DataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -151,7 +149,7 @@ public class CollectionSupportTable {
 
                 while (resultSet.next()) {
                     int index = resultSet.getInt("index");
-                    Object value = getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
+                    Object value = mapper.getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
                     list.add(index, value);
                 }
 
@@ -160,7 +158,7 @@ public class CollectionSupportTable {
                 Set<Object> set = new HashSet<>();
 
                 while (resultSet.next()) {
-                    Object value = getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
+                    Object value = mapper.getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
                     set.add(value);
                 }
 
@@ -169,13 +167,5 @@ public class CollectionSupportTable {
 
             throw new RuntimeException("Failed to get collection attribute %s".formatted(collectionAttribute));
         });
-    }
-
-    private Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
-        try {
-            return registry.getDataType(expectedType).from(resultSet, null, column);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

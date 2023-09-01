@@ -5,6 +5,7 @@ import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class ColumnMapper {
@@ -44,6 +45,18 @@ public class ColumnMapper {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Object getValue(ResultSet resultSet, ColumnAttribute attribute, String column, Class<?> expectedType) {
+        try {
+            return registry.getDataType(expectedType).from(resultSet, attribute, column);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
+        return this.getValue(resultSet, null, column, expectedType);
     }
 
     public String toSqlType(ColumnAttribute column) {

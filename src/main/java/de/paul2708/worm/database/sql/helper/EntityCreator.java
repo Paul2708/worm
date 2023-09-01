@@ -29,7 +29,7 @@ public final class EntityCreator {
                 continue;
             }
 
-            fieldValues.put(column.fieldName(), getValue(resultSet, registry, column, column.getFullColumnName(), column.type()));
+            fieldValues.put(column.fieldName(), mapper.getValue(resultSet, column, column.getFullColumnName(), column.type()));
         }
 
         for (ColumnAttribute column : resolver.getColumns()) {
@@ -44,14 +44,5 @@ public final class EntityCreator {
         fieldValues.putAll(foreignFields);
 
         return resolver.createInstance(fieldValues);
-    }
-
-    private static Object getValue(ResultSet resultSet, ColumnsRegistry registry, ColumnAttribute attribute,
-                                   String column, Class<?> expectedType) {
-        try {
-            return registry.getDataType(expectedType).from(resultSet, attribute, column);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
