@@ -168,8 +168,7 @@ public class MySQLDatabase implements Database {
             }, resultSet -> {
                 if (resultSet.next()) {
                     for (ColumnAttribute column : timestampColumns) {
-                        Object timestamp = columnsRegistry.getDataType(column.type()).from(resultSet, column,
-                                column.columnName());
+                        Object timestamp = mapper.getValue(resultSet, column);
                         column.setValue(entity, timestamp);
                     }
                 }

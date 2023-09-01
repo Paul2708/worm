@@ -55,6 +55,14 @@ public class ColumnMapper {
         }
     }
 
+    public Object getValue(ResultSet resultSet, ColumnAttribute attribute) {
+        try {
+            return registry.getDataType(attribute.type()).from(resultSet, attribute, attribute.columnName());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public Object getValue(ResultSet resultSet, String column, Class<?> expectedType) {
         return this.getValue(resultSet, null, column, expectedType);
     }
