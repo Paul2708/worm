@@ -4,14 +4,15 @@ import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.collections.CollectionProvider;
+import de.paul2708.worm.database.sql.collections.ListProvider;
+import de.paul2708.worm.database.sql.collections.SetProvider;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.util.Reflections;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class CollectionSupportTable {
 
@@ -25,6 +26,8 @@ public class CollectionSupportTable {
     private final ColumnMapper mapper;
     private final ConnectionContext context;
 
+    private final CollectionProvider collectionProvider;
+
     public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute,
                                   ColumnsRegistry registry, ColumnMapper mapper,
                                   ConnectionContext context) {
@@ -37,39 +40,25 @@ public class CollectionSupportTable {
 
         this.mapper = mapper;
         this.context = context;
+
+        this.collectionProvider = Reflections.isList(collectionAttribute.type()) ?
+                new ListProvider() : new SetProvider();
     }
 
     public void create() {
-        String query = null;
+        SortedMap<String, String> columns = collectionProvider.getTableCreationColumns(collectionAttribute, mapper);
+        String collectionColumns = columns.keySet().stream()
+                .map(column -> column + " " + columns.get(column))
+                .collect(Collectors.joining(", "));
 
-        if (Reflections.isList(collectionAttribute.type())) {
-            Class<?> elementType = Reflections.getElementType(collectionAttribute.getField());
-
-            query = ("CREATE TABLE IF NOT EXISTS %s ("
-                    + "id INT NOT NULL AUTO_INCREMENT, "
-                    + "parent_id %s, "
-                    + "`index` INT, "
-                    + "value %s, "
-                    + "PRIMARY KEY (id), "
-                    + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
-                    .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), mapper.toSqlType(elementType),
-                            entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
-        } else if (Reflections.isSet(collectionAttribute.type())) {
-            Class<?> elementType = Reflections.getElementType(collectionAttribute.getField());
-
-            query = ("CREATE TABLE IF NOT EXISTS %s ("
-                    + "id INT NOT NULL AUTO_INCREMENT, "
-                    + "parent_id %s, "
-                    + "value %s, "
-                    + "PRIMARY KEY (id), "
-                    + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
-                    .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), mapper.toSqlType(elementType),
-                            entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
-        }
-
-        if (query == null) {
-            throw new RuntimeException("Failed to create collection table for %s".formatted(collectionAttribute));
-        }
+        String query = ("CREATE TABLE IF NOT EXISTS %s ("
+                + "id INT NOT NULL AUTO_INCREMENT, "
+                + "parent_id %s, "
+                + "%s, "
+                + "PRIMARY KEY (id), "
+                + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
+                .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), collectionColumns,
+                        entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
 
         context.query(query);
     }
@@ -84,58 +73,36 @@ public class CollectionSupportTable {
     }
 
     public void insert(Object entity) {
-        if (Reflections.isList(collectionAttribute.type())) {
-            List<?> list = (List<?>) collectionAttribute.getValue(entity);
-
-            if (list.isEmpty()) {
-                return;
-            }
-
-            List<String> sqlValues = new ArrayList<>();
-            for (int i = 0; i < list.size(); i++) {
-                sqlValues.add("(?, %d, ?)".formatted(i));
-            }
-
-            String query = "INSERT INTO %s (parent_id, `index`, value) VALUES %s"
-                    .formatted(tableName, String.join(", ", sqlValues));
-
-            context.query(query, statement -> {
-                int index = 1;
-                for (Object object : list) {
-                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, index);
-                    index++;
-                    mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
-                            object, statement, index);
-                    index++;
-                }
-            });
-        } else if (Reflections.isSet(collectionAttribute.type())) {
-            Set<?> set = (Set<?>) collectionAttribute.getValue(entity);
-
-            if (set.isEmpty()) {
-                return;
-            }
-
-            List<String> sqlValues = new ArrayList<>();
-            for (Object ignored : set) {
-                sqlValues.add("(?, ?)");
-            }
-
-            String query = "INSERT INTO %s (parent_id, value) VALUES %s"
-                    .formatted(tableName, String.join(", ", sqlValues));
-
-            context.query(query, statement -> {
-                int index = 1;
-
-                for (Object element : set) {
-                    mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, index);
-                    index++;
-                    mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
-                            element, statement, index);
-                    index++;
-                }
-            });
+        if (collectionProvider.size(entity, collectionAttribute) == 0) {
+            return;
         }
+
+        String collectionColumns = String.join(", ", collectionProvider.getTableCreationColumns(collectionAttribute, mapper)
+                .keySet());
+        String collectionParameters = IntStream.range(0, collectionProvider.numberOfParameters(entity, collectionAttribute) + 1)
+                .mapToObj(i -> "?")
+                .collect(Collectors.joining(", "));
+        String allCollectionParameters = IntStream.range(0, collectionProvider.size(entity, collectionAttribute))
+                .mapToObj(i -> "(%s)".formatted(collectionParameters))
+                .collect(Collectors.joining(", "));
+
+        String query = "INSERT INTO %s (parent_id, %s) VALUES %s"
+                .formatted(tableName, collectionColumns, allCollectionParameters);
+
+        context.query(query, statement -> {
+            int index = 1;
+
+            for (List<Object> sqlValues : collectionProvider.getSqlValues(entity, collectionAttribute)) {
+                mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, index);
+                index++;
+
+                for (Object sqlValue : sqlValues) {
+                    mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
+                            sqlValue, statement, index);
+                    index++;
+                }
+            }
+        });
     }
 
     public Object get(Object entity) {
@@ -143,29 +110,6 @@ public class CollectionSupportTable {
 
         return context.query(query, statement -> {
             mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, 1);
-        }, resultSet -> {
-            if (Reflections.isList(collectionAttribute.type())) {
-                List<Object> list = new ArrayList<>();
-
-                while (resultSet.next()) {
-                    int index = resultSet.getInt("index");
-                    Object value = mapper.getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
-                    list.add(index, value);
-                }
-
-                return list;
-            } else if (Reflections.isSet(collectionAttribute.type())) {
-                Set<Object> set = new HashSet<>();
-
-                while (resultSet.next()) {
-                    Object value = mapper.getValue(resultSet, "value", Reflections.getElementType(collectionAttribute.getField()));
-                    set.add(value);
-                }
-
-                return set;
-            }
-
-            throw new RuntimeException("Failed to get collection attribute %s".formatted(collectionAttribute));
-        });
+        }, collectionProvider.getValueFromResultSet(collectionAttribute, mapper));
     }
 }
