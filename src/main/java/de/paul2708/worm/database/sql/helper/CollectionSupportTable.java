@@ -19,8 +19,6 @@ public class CollectionSupportTable {
     private final AttributeResolver entityResolver;
     private final ColumnAttribute collectionAttribute;
 
-    private final ColumnsRegistry registry;
-
     private final String tableName;
 
     private final ColumnMapper mapper;
@@ -29,12 +27,9 @@ public class CollectionSupportTable {
     private final CollectionProvider collectionProvider;
 
     public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute,
-                                  ColumnsRegistry registry, ColumnMapper mapper,
-                                  ConnectionContext context) {
+                                  ColumnMapper mapper, ConnectionContext context) {
         this.entityResolver = entityResolver;
         this.collectionAttribute = collectionAttribute;
-
-        this.registry = registry;
 
         this.tableName = entityResolver.getTable() + "_" + collectionAttribute.columnName();
 

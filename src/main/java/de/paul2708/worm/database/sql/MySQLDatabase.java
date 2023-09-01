@@ -100,7 +100,7 @@ public class MySQLDatabase implements Database {
         // Create collection tables
         for (ColumnAttribute column : resolver.getColumns()) {
             if (column.isCollection()) {
-                new CollectionSupportTable(resolver, column, columnsRegistry, mapper, context).create();
+                new CollectionSupportTable(resolver, column, mapper, context).create();
             }
         }
     }
@@ -182,7 +182,7 @@ public class MySQLDatabase implements Database {
                 continue;
             }
 
-            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, columnsRegistry, mapper, context);
+            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, mapper, context);
             supportTable.deleteExistingElements(entity);
             supportTable.insert(entity);
         }
@@ -204,7 +204,7 @@ public class MySQLDatabase implements Database {
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, resultSet, mapper, context);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), resultSet, mapper, context);
                 result.add(instance);
             }
 
@@ -226,7 +226,7 @@ public class MySQLDatabase implements Database {
         }, resultSet -> {
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry,
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(),
                         resultSet, mapper, context);
                 return Optional.of(instance);
             } else {
@@ -239,7 +239,7 @@ public class MySQLDatabase implements Database {
     public void delete(AttributeResolver resolver, Object entity) {
         resolver.getColumns().stream()
                 .filter(ColumnAttribute::isCollection)
-                .map(column -> new CollectionSupportTable(resolver, column, columnsRegistry, mapper, context))
+                .map(column -> new CollectionSupportTable(resolver, column, mapper, context))
                 .forEach(table -> {
                     table.deleteExistingElements(entity);
                 });
