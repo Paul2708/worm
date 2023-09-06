@@ -331,4 +331,23 @@ public abstract class DatabaseTest {
     }
 
     // TODO: Test entity with exactly one primary key
+
+
+    @Test
+    void testDefaultMethod() {
+        personRepository.save(new Person("Alice", 24));
+        Person bob = personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Sam", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        Optional<Person> personOpt = personRepository.findByNameBob();
+        assertTrue(personOpt.isPresent());
+        assertEquals(bob, personOpt.get());
+    }
+
+    @Test
+    void testArbitraryDefaultMethod() {
+        assertEquals("bar", personRepository.foo());
+    }
 }
