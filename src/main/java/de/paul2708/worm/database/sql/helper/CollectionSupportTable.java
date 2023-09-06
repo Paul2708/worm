@@ -4,8 +4,6 @@ import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.collections.CollectionProvider;
-import de.paul2708.worm.database.sql.collections.ListProvider;
-import de.paul2708.worm.database.sql.collections.SetProvider;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
 import de.paul2708.worm.util.Reflections;
 
@@ -36,8 +34,7 @@ public class CollectionSupportTable {
         this.mapper = mapper;
         this.context = context;
 
-        this.collectionProvider = Reflections.isList(collectionAttribute.type()) ?
-                new ListProvider() : new SetProvider();
+        this.collectionProvider = CollectionProvider.of(collectionAttribute);
     }
 
     public void create() {
