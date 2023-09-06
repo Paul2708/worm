@@ -334,6 +334,89 @@ public abstract class DatabaseTest {
 
 
     @Test
+    void testFindByNameAndAge() {
+        Person youngAlice = personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Alice", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        Optional<Person> aliceOpt = personRepository.findByNameAndAge("Alice", 24);
+
+        assertTrue(aliceOpt.isPresent());
+        assertEquals(youngAlice, aliceOpt.get());
+    }
+
+    @Test
+    void testEmptyFindByNameAndAge() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Alice", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        Optional<Person> aliceOpt = personRepository.findByNameAndAge("Bob", 42);
+        assertTrue(aliceOpt.isEmpty());
+    }
+
+    @Test
+    void testMultipleFindByNameAndAge() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Alice", 24));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        assertThrows(RuntimeException.class, () -> {
+            personRepository.findByNameAndAge("Alice", 24);
+        });
+    }
+
+    @Test
+    void testFindByName() {
+        Person aliceA = personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        Person aliceB = personRepository.save(new Person("Alice", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        List<Person> alices = personRepository.findByName("Alice");
+        assertIgnoringOrder(List.of(aliceA, aliceB), alices);
+    }
+
+    @Test
+    void testEmptyFindByName() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Sam", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        List<Person> alices = personRepository.findByName("Paul");
+        assertTrue(alices.isEmpty());
+    }
+
+    @Test
+    void testFindByUnknownColumn() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Sam", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            personRepository.findByInvalid("unknown");
+        });
+    }
+
+    private <T> void assertIgnoringOrder(List<T> expected, List<T> actual) {
+        Set<T> expectedSet = new HashSet<>(expected);
+        Set<T> actualSet = new HashSet<>(actual);
+
+        assertEquals(expectedSet, actualSet);
+    }
+
+    @Test
     void testDefaultMethod() {
         personRepository.save(new Person("Alice", 24));
         Person bob = personRepository.save(new Person("Bob", 24));
@@ -341,9 +424,8 @@ public abstract class DatabaseTest {
 
         assumeTrue(personRepository.findAll().size() == 3);
 
-        Optional<Person> personOpt = personRepository.findByNameBob();
-        assertTrue(personOpt.isPresent());
-        assertEquals(bob, personOpt.get());
+        List<Person> persons = personRepository.findByNameBob();
+        assertIgnoringOrder(List.of(bob), persons);
     }
 
     @Test

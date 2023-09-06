@@ -30,8 +30,10 @@ public class RepositoryInvocationHandler implements InvocationHandler {
         DatabaseAction findAllAction = new FindAllAction(new MethodInformation(method, args));
         DatabaseAction findByIdAction = new FindByIdAction(new MethodInformation(method, args));
         DatabaseAction deleteAction = new DeleteAction(new MethodInformation(method, args));
+        DatabaseAction findByAttributesAction = new FindByAttributesAction(new MethodInformation(method, args));
 
-        List<DatabaseAction> actions = List.of(saveAction, findAllAction, findByIdAction, deleteAction);
+        List<DatabaseAction> actions = List.of(saveAction, findAllAction, findByIdAction, deleteAction,
+                findByAttributesAction);
 
         for (DatabaseAction action : actions) {
             if (action.matches(method, args)) {

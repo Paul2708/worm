@@ -10,8 +10,10 @@ import de.paul2708.worm.repository.CrudRepository;
 import de.paul2708.worm.repository.Repository;
 import de.paul2708.worm.repository.actions.*;
 import de.paul2708.worm.util.DefaultValueChecker;
+import de.paul2708.worm.util.Reflections;
 
 import java.lang.reflect.Field;
+import java.util.*;
 
 public class DatabaseActionProcessor {
 
@@ -78,6 +80,33 @@ public class DatabaseActionProcessor {
             database.delete(resolver, targetEntity);
 
             return null;
+        } else if (action instanceof FindByAttributesAction) {
+            String methodName = action.getMethodInformation().method().getName();
+            String[] columnNames = methodName.replace("findBy", "").split("And");
+            Map<ColumnAttribute, Object> attributes = new HashMap<>();
+
+            for (int i = 0; i < columnNames.length; i++) {
+                ColumnAttribute attribute = getColumnByTransformedName(resolver, columnNames[i]);
+                attributes.put(attribute, action.getMethodInformation().args()[i]);
+            }
+
+            Collection<Object> entities = database.findByAttributes(resolver, attributes);
+            Class<?> returnType = action.getMethodInformation().method().getReturnType();
+
+            if (Reflections.isList(returnType)) {
+                return new ArrayList<>(entities);
+            } else if (Reflections.isSet(returnType)) {
+                return new HashSet<>(entities);
+            } else if (returnType.equals(Optional.class)) {
+                if (entities.isEmpty()) {
+                    return Optional.empty();
+                }
+                if (entities.size() == 1) {
+                    return Optional.of(entities.iterator().next());
+                }
+
+                throw new RuntimeException("Expected %s but retrieved multiple entities".formatted(Optional.class));
+            }
         }
 
         throw new IllegalArgumentException("Did not handle database action %s".formatted(action.getClass().getName()));
@@ -92,5 +121,16 @@ public class DatabaseActionProcessor {
         } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private ColumnAttribute getColumnByTransformedName(AttributeResolver resolver, String transformedName) {
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (column.getTransformedColumnName().equals(transformedName)) {
+                return column;
+            }
+        }
+
+        throw new IllegalArgumentException("Could not find a matching column with the name %s"
+                .formatted(transformedName));
     }
 }
