@@ -1,6 +1,7 @@
 package de.paul2708.worm.columns;
 
 import de.paul2708.worm.columns.properties.*;
+import de.paul2708.worm.columns.util.ColumnNameTransformer;
 import de.paul2708.worm.util.Reflections;
 
 import java.lang.annotation.Annotation;
@@ -47,6 +48,10 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
 
     public String getFullColumnName() {
         return "%s.%s".formatted(new AttributeResolver(entityClass).getTable(), columnName);
+    }
+
+    public String getTransformedColumnName() {
+        return ColumnNameTransformer.transform(columnName);
     }
 
     public Field getField() {
