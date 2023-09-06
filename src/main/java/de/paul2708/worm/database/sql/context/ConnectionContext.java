@@ -41,8 +41,9 @@ public class ConnectionContext {
              PreparedStatement statement = connection.prepareStatement(query)) {
             parameterConsumer.accept(statement);
 
-            ResultSet resultSet = statement.executeQuery();
-            return resultFunction.apply(resultSet);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultFunction.apply(resultSet);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -53,8 +54,9 @@ public class ConnectionContext {
              PreparedStatement statement = connection.prepareStatement(query)) {
             parameterConsumer.accept(statement);
 
-            ResultSet resultSet = statement.executeQuery();
-            resultConsumer.accept(resultSet);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultConsumer.accept(resultSet);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -63,8 +65,10 @@ public class ConnectionContext {
     public <T> T query(String query, SQLFunction<T> resultFunction) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            ResultSet resultSet = statement.executeQuery();
-            return resultFunction.apply(resultSet);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultFunction.apply(resultSet);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
