@@ -8,18 +8,17 @@ import de.paul2708.worm.columns.CreatedAt;
 import de.paul2708.worm.columns.UpdatedAt;
 import de.paul2708.worm.columns.properties.ForeignKeyProperty;
 import de.paul2708.worm.database.Database;
-import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
+import de.paul2708.worm.database.sql.context.ConnectionContext;
+import de.paul2708.worm.database.sql.context.SQLFunction;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.database.sql.helper.CollectionSupportTable;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
-import de.paul2708.worm.util.Reflections;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {
@@ -31,8 +30,9 @@ public class MySQLDatabase implements Database {
     private final String username;
     private final String password;
 
-    private DataSource dataSource;
-    private ColumnsRegistry columnsRegistry;
+    private ColumnMapper mapper;
+
+    private ConnectionContext context;
 
     public MySQLDatabase(String hostname, int port, String database, String username, String password) {
         this.hostname = hostname;
@@ -50,9 +50,10 @@ public class MySQLDatabase implements Database {
             throw new RuntimeException(e);
         }
 
-        if (this.columnsRegistry == null) {
-            registerColumnsRegistry(ColumnsRegistry.create());
-        }
+        ColumnsRegistry columnsRegistry = ColumnsRegistry.create();
+        columnsRegistry.init();
+
+        this.mapper = new ColumnMapper(columnsRegistry);
 
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl("jdbc:mysql://%s:%d/%s".formatted(hostname, port, database));
@@ -62,7 +63,8 @@ public class MySQLDatabase implements Database {
         config.setMaximumPoolSize(5);
         config.setMinimumIdle(2);
 
-        this.dataSource = new HikariDataSource(config);
+        DataSource dataSource = new HikariDataSource(config);
+        this.context = new ConnectionContext(dataSource);
     }
 
     @Override
@@ -70,7 +72,7 @@ public class MySQLDatabase implements Database {
         // Create entity table
         String sqlColumns = resolver.getColumns().stream()
                 .filter(column -> !column.isCollection())
-                .map(column -> "%s %s".formatted(column.columnName(), toSqlType(column)))
+                .map(column -> "%s %s".formatted(column.columnName(), mapper.toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
         String foreignKeyReferences = resolver.getForeignKeys().stream()
@@ -92,34 +94,14 @@ public class MySQLDatabase implements Database {
             query += ")";
         }
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.execute();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        context.query(query);
 
         // Create collection tables
         for (ColumnAttribute column : resolver.getColumns()) {
             if (column.isCollection()) {
-                new CollectionSupportTable(resolver, column, dataSource, columnsRegistry).create();
+                new CollectionSupportTable(resolver, column, mapper, context).create();
             }
         }
-    }
-
-    public void registerColumnsRegistry(ColumnsRegistry registry) {
-        if (registry == null) {
-            throw new IllegalArgumentException("Registry that was provided is null");
-        }
-        this.columnsRegistry = registry;
-        this.columnsRegistry.init();
-    }
-
-    public void registerDataType(ColumnDataType<?> dataType) {
-        if (dataType == null) {
-            throw new IllegalArgumentException("Data type that was provided is null");
-        }
-        this.columnsRegistry.register(dataType);
     }
 
     @Override
@@ -148,15 +130,14 @@ public class MySQLDatabase implements Database {
         String query = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s"
                 .formatted(resolver.getTable(), sqlColumns, sqlValues, sqlUpdate);
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
+        context.query(query, statement -> {
             int index = 1;
             for (ColumnAttribute column : resolver.getColumns()) {
                 if (column.isAutoTimestamp() || column.isCollection()) {
                     continue;
                 }
 
-                setValue(stmt, index, column, entity);
+                mapper.setParameterValue(column, entity, statement, index);
                 index++;
             }
             for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
@@ -164,49 +145,42 @@ public class MySQLDatabase implements Database {
                     continue;
                 }
 
-                setValue(stmt, index, column, entity);
+                mapper.setParameterValue(column, entity, statement, index);
                 index++;
             }
+        });
 
-            stmt.execute();
+        // Fetch default column values
+        List<ColumnAttribute> timestampColumns = resolver.getColumns().stream()
+                .filter(ColumnAttribute::isAutoTimestamp)
+                .sorted()
+                .toList();
 
-            // Fetch default column values
-            List<ColumnAttribute> timestampColumns = resolver.getColumns().stream()
-                    .filter(ColumnAttribute::isAutoTimestamp)
-                    .sorted()
-                    .toList();
+        if (!timestampColumns.isEmpty()) {
+            String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
+                    .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
+                            resolver.getTable(),
+                            resolver.getPrimaryKey().columnName());
 
-            if (!timestampColumns.isEmpty()) {
-                String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
-                        .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
-                                resolver.getTable(),
-                                resolver.getPrimaryKey().columnName());
-
-                try (Connection connection = dataSource.getConnection();
-                     PreparedStatement statement = connection.prepareStatement(timestampQuery)) {
-                    setValue(statement, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
-                            resolver.getPrimaryKey().getValue(entity));
-
-                    ResultSet resultSet = statement.executeQuery();
-
-                    if (resultSet.next()) {
-                        for (ColumnAttribute column : timestampColumns) {
-                            Object timestamp = columnsRegistry.getDataType(column.type()).from(resultSet, column,
-                                    column.columnName());
-                            column.setValue(entity, timestamp);
-                        }
+            context.query(timestampQuery, statement -> {
+                mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
+            }, resultSet -> {
+                if (resultSet.next()) {
+                    for (ColumnAttribute column : timestampColumns) {
+                        Object timestamp = mapper.getValue(resultSet, column);
+                        column.setValue(entity, timestamp);
                     }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
                 }
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            });
         }
 
         // Save collections
         for (ColumnAttribute column : resolver.getColumns()) {
-            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, dataSource, columnsRegistry);
+            if (!column.isCollection()) {
+                continue;
+            }
+
+            CollectionSupportTable supportTable = new CollectionSupportTable(resolver, column, mapper, context);
             supportTable.deleteExistingElements(entity);
             supportTable.insert(entity);
         }
@@ -224,21 +198,16 @@ public class MySQLDatabase implements Database {
                         resolver.getForeignKeys().isEmpty() ? "" : " WHERE " + buildConditions(resolver));
 
         // Query database
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            ResultSet resultSet = stmt.executeQuery();
-
+        return context.query(query, (SQLFunction<Collection<Object>>) resultSet -> {
             List<Object> result = new ArrayList<>();
 
             while (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), resultSet, mapper, context);
                 result.add(instance);
             }
 
             return result;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     @Override
@@ -250,29 +219,25 @@ public class MySQLDatabase implements Database {
                         resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
         // Query database
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(), key);
-
-            ResultSet resultSet = stmt.executeQuery();
-
+        return context.query(query, statement -> {
+            mapper.setDirectParameterValue(resolver.getPrimaryKey(), key, statement, 1);
+        }, resultSet -> {
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
-                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), columnsRegistry, dataSource, resultSet);
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(),
+                        resultSet, mapper, context);
                 return Optional.of(instance);
             } else {
                 return Optional.empty();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        });
     }
 
     @Override
     public void delete(AttributeResolver resolver, Object entity) {
         resolver.getColumns().stream()
                 .filter(ColumnAttribute::isCollection)
-                .map(column -> new CollectionSupportTable(resolver, column, dataSource, columnsRegistry))
+                .map(column -> new CollectionSupportTable(resolver, column, mapper, context))
                 .forEach(table -> {
                     table.deleteExistingElements(entity);
                 });
@@ -280,14 +245,9 @@ public class MySQLDatabase implements Database {
         String query = "DELETE FROM %s WHERE %s = ?"
                 .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            setValue(stmt, resolver.getPrimaryKey().type(), 1, resolver.getPrimaryKey(),
-                    resolver.getValueByColumn(entity, resolver.getPrimaryKey().columnName()));
-            stmt.execute();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        context.query(query, statement -> {
+            mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
+        });
     }
 
     private String buildConditions(AttributeResolver resolver) {
@@ -298,47 +258,5 @@ public class MySQLDatabase implements Database {
                     return column.getFullColumnName() + " = " + fullColumnName;
                 })
                 .collect(Collectors.joining(" AND "));
-    }
-
-    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, ColumnAttribute attribute, Object value) {
-        try {
-            columnsRegistry.getDataType(expectedType).unsafeTo(statement, index, attribute, value);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void setValue(PreparedStatement statement, int index, ColumnAttribute column, Object entity) {
-        if (column.isForeignKey()) {
-            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey();
-            Object value = foreignPrimaryKey.getValue(column.getValue(entity));
-
-            setValue(statement, value.getClass(), index, column, value);
-        } else {
-            setValue(statement, column.type(), index, column, column.getValue(entity));
-        }
-    }
-
-    private String toSqlType(ColumnAttribute attribute) {
-        Class<?> type = attribute.type();
-
-        if (Reflections.isSet(type) || Reflections.isList(type)) {
-            return "INT";
-        }
-
-        return columnsRegistry.getDataType(type).getSqlType(attribute);
-    }
-
-    private String toSqlType(Class<?> type) {
-        return columnsRegistry.getDataType(type).getSqlType(null);
-    }
-
-    private void query(String query) {
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.execute();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

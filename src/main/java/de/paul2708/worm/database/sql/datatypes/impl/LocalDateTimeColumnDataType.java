@@ -38,6 +38,10 @@ public final class LocalDateTimeColumnDataType implements ColumnDataType<LocalDa
 
     @Override
     public String getSqlType(ColumnAttribute attribute) {
+        if (attribute == null) {
+            return "DATETIME(6)";
+        }
+
         if (attribute.hasAnnotation(CreatedAt.class)) {
             return "DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6)";
         } else if (attribute.hasAnnotation(UpdatedAt.class)) {

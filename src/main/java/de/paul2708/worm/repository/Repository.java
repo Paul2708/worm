@@ -18,7 +18,7 @@ public final class Repository {
 
         database.prepare(new AttributeResolver(entityClass));
 
-        RepositoryInvocationHandler handler = new RepositoryInvocationHandler(repositoryClass, entityClass, database);
+        RepositoryInvocationHandler handler = new RepositoryInvocationHandler(entityClass, database);
 
         return (R) Proxy.newProxyInstance(
                 Repository.class.getClassLoader(), new Class[]{repositoryClass},
