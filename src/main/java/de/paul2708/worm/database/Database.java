@@ -3,6 +3,7 @@ package de.paul2708.worm.database;
 import de.paul2708.worm.columns.AttributeResolver;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 public interface Database {
@@ -18,6 +19,8 @@ public interface Database {
     Collection<Object> findAll(AttributeResolver resolver);
 
     Optional<Object> findById(AttributeResolver resolver, Object key);
+
+    Collection<Object> findByAttributes(AttributeResolver resolver, Map<String, Object> attributes);
 
     void delete(AttributeResolver resolver, Object entity);
 }

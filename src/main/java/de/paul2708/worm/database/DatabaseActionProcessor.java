@@ -12,6 +12,8 @@ import de.paul2708.worm.repository.actions.*;
 import de.paul2708.worm.util.DefaultValueChecker;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DatabaseActionProcessor {
 
@@ -77,6 +79,16 @@ public class DatabaseActionProcessor {
             database.delete(resolver, targetEntity);
 
             return null;
+        } else if (action instanceof FindByAttributesAction) {
+            String methodName = action.getMethodInformation().method().getName();
+            String[] columnNames = methodName.replace("findBy", "").split("And");
+            Map<String, Object> attributes = new HashMap<>();
+
+            for (int i = 0; i < columnNames.length; i++) {
+                attributes.put(columnNames[i], action.getMethodInformation().args()[i]);
+            }
+
+
         }
 
         throw new IllegalArgumentException("Did not handle database action %s".formatted(action.getClass().getName()));
