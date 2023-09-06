@@ -7,10 +7,10 @@ import de.paul2708.worm.database.sql.collections.CollectionProvider;
 import de.paul2708.worm.database.sql.collections.ListProvider;
 import de.paul2708.worm.database.sql.collections.SetProvider;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
-import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.util.Reflections;
 
-import java.util.*;
+import java.util.List;
+import java.util.SortedMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
