@@ -12,4 +12,12 @@ public interface PersonRepository extends CrudRepository<Person, Integer> {
     List<Person> findByName(String name);
 
     Optional<Person> findByInvalid(String invalid);
+
+    default List<Person> findByNameBob() {
+        return findByName("Bob");
+    }
+
+    default String foo() {
+        return "bar";
+    }
 }

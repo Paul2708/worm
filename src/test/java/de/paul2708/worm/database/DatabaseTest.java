@@ -415,4 +415,21 @@ public abstract class DatabaseTest {
 
         assertEquals(expectedSet, actualSet);
     }
+
+    @Test
+    void testDefaultMethod() {
+        personRepository.save(new Person("Alice", 24));
+        Person bob = personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Sam", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        List<Person> persons = personRepository.findByNameBob();
+        assertIgnoringOrder(List.of(bob), persons);
+    }
+
+    @Test
+    void testArbitraryDefaultMethod() {
+        assertEquals("bar", personRepository.foo());
+    }
 }
