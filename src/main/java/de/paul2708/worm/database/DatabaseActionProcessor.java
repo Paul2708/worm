@@ -44,7 +44,8 @@ public class DatabaseActionProcessor {
             // Check max length
             for (ColumnAttribute column : resolver.getColumns()) {
                 if (column.hasMaximumLength()) {
-                    String text = (String) resolver.getValueByColumn(targetEntity, column);
+                    String text = (String) column.getValue(targetEntity);
+
                     if (text.length() > column.getProperty(LengthRestrictedProperty.class).length()) {
                         throw new IllegalStateException("The value of field %s is too long.".formatted(column.fieldName()));
                     }

@@ -26,8 +26,4 @@ public class ForeignKeyProperty implements ColumnProperty {
     public ColumnAttribute getForeignPrimaryKey() {
         return resolver.getPrimaryKey();
     }
-
-    public Object getForeignPrimaryKeyValue(Object entity) {
-        return resolver.getPrimaryKey().getValue(new AttributeResolver(entity.getClass()).getPrimaryKey().getValue(entity));
-    }
 }

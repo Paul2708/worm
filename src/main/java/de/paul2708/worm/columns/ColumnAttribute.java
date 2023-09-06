@@ -17,6 +17,7 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
     private final Class<?> entityClass;
 
     private final List<ColumnProperty> properties;
+    private final Field field;
 
     public ColumnAttribute(String columnName, String fieldName, Class<?> type, Class<?> entityClass) {
         this.columnName = columnName;
@@ -25,6 +26,7 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
         this.entityClass = entityClass;
 
         this.properties = new ArrayList<>();
+        this.field = Reflections.getField(entityClass, fieldName);
     }
 
     public void addProperty(ColumnProperty property) {
@@ -48,34 +50,21 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
     }
 
     public Field getField() {
-        try {
-            Field field = entityClass.getDeclaredField(fieldName);
-            field.setAccessible(true);
-
-            return field;
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
+        return field;
     }
 
     public void setValue(Object targetObject, Object value) {
         try {
-            Field field = targetObject.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-
             field.set(targetObject, value);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
     public Object getValue(Object targetObject) {
         try {
-            Field field = targetObject.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-
             return field.get(targetObject);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -146,7 +135,9 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ColumnAttribute that = (ColumnAttribute) o;
-        return Objects.equals(columnName, that.columnName) && Objects.equals(fieldName, that.fieldName) && Objects.equals(type, that.type);
+        return Objects.equals(columnName, that.columnName)
+                && Objects.equals(fieldName, that.fieldName)
+                && Objects.equals(type, that.type);
     }
 
     @Override
