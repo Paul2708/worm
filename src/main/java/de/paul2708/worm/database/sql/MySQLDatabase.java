@@ -15,10 +15,7 @@ import de.paul2708.worm.database.sql.helper.CollectionSupportTable;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
 
 import javax.sql.DataSource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {
@@ -230,6 +227,41 @@ public class MySQLDatabase implements Database {
             } else {
                 return Optional.empty();
             }
+        });
+    }
+
+    @Override
+    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<ColumnAttribute, Object> attributes) {
+        // Build query
+        List<ColumnAttribute> columnAttributes = new ArrayList<>();
+        List<String> conditionArguments = new ArrayList<>();
+
+        for (Map.Entry<ColumnAttribute, Object> entry : attributes.entrySet()) {
+            ColumnAttribute column = entry.getKey();
+            conditionArguments.add("%s = ?".formatted(column.columnName()));
+
+            columnAttributes.add(column);
+        }
+        String conditions = String.join(" AND ", conditionArguments);
+
+        String query = "SELECT * FROM %s WHERE %s".formatted(resolver.getFormattedTableNames(), conditions);
+
+        // Query database
+        return context.query(query, statement -> {
+            int index = 1;
+            for (ColumnAttribute column : columnAttributes) {
+                mapper.setDirectParameterValue(column, attributes.get(column), statement, index);
+                index++;
+            }
+        }, resultSet -> {
+            List<Object> result = new ArrayList<>();
+
+            while (resultSet.next()) {
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), resultSet, mapper, context);
+                result.add(instance);
+            }
+
+            return result;
         });
     }
 
