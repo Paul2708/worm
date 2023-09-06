@@ -83,10 +83,11 @@ public class DatabaseActionProcessor {
         } else if (action instanceof FindByAttributesAction) {
             String methodName = action.getMethodInformation().method().getName();
             String[] columnNames = methodName.replace("findBy", "").split("And");
-            Map<String, Object> attributes = new HashMap<>();
+            Map<ColumnAttribute, Object> attributes = new HashMap<>();
 
             for (int i = 0; i < columnNames.length; i++) {
-                attributes.put(columnNames[i], action.getMethodInformation().args()[i]);
+                ColumnAttribute attribute = getColumnByTransformedName(resolver, columnNames[i]);
+                attributes.put(attribute, action.getMethodInformation().args()[i]);
             }
 
             Collection<Object> entities = database.findByAttributes(resolver, attributes);
@@ -120,5 +121,16 @@ public class DatabaseActionProcessor {
         } catch (IllegalAccessException | NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private ColumnAttribute getColumnByTransformedName(AttributeResolver resolver, String transformedName) {
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (column.getTransformedColumnName().equals(transformedName)) {
+                return column;
+            }
+        }
+
+        throw new IllegalArgumentException("Could not find a matching column with the name %s"
+                .formatted(transformedName));
     }
 }

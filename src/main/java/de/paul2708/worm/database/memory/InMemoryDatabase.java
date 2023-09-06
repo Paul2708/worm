@@ -59,7 +59,7 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
-    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<String, Object> attributes) {
+    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<ColumnAttribute, Object> attributes) {
         Map<Object, Object> map = database.getOrDefault(resolver.getTargetClass(), new HashMap<>());
         List<Object> result = new ArrayList<>();
 
@@ -92,12 +92,13 @@ public class InMemoryDatabase implements Database {
         }
     }
 
-    private boolean hasMatchingAttributes(AttributeResolver resolver, Object entity, Map<String, Object> attributes) {
+    private boolean hasMatchingAttributes(AttributeResolver resolver, Object entity,
+                                          Map<ColumnAttribute, Object> attributes) {
         for (ColumnAttribute column : resolver.getColumns()) {
-            if (attributes.containsKey(column.getTransformedColumnName())) {
+            if (attributes.containsKey(column)) {
                 Object actualValue = column.getValue(entity);
 
-                if (!actualValue.equals(attributes.get(column.getTransformedColumnName()))) {
+                if (!actualValue.equals(attributes.get(column))) {
                     return false;
                 }
             }

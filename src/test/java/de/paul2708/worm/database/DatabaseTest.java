@@ -396,6 +396,19 @@ public abstract class DatabaseTest {
         assertTrue(alices.isEmpty());
     }
 
+    @Test
+    void testFindByUnknownColumn() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Sam", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            personRepository.findByInvalid("unknown");
+        });
+    }
+
     private <T> void assertIgnoringOrder(List<T> expected, List<T> actual) {
         Set<T> expectedSet = new HashSet<>(expected);
         Set<T> actualSet = new HashSet<>(actual);

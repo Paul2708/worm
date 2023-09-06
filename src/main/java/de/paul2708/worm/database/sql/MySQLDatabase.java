@@ -15,10 +15,7 @@ import de.paul2708.worm.database.sql.helper.CollectionSupportTable;
 import de.paul2708.worm.database.sql.helper.EntityCreator;
 
 import javax.sql.DataSource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MySQLDatabase implements Database {
@@ -231,6 +228,11 @@ public class MySQLDatabase implements Database {
                 return Optional.empty();
             }
         });
+    }
+
+    @Override
+    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<ColumnAttribute, Object> attributes) {
+        return null;
     }
 
     @Override

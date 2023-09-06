@@ -10,4 +10,6 @@ public interface PersonRepository extends CrudRepository<Person, Integer> {
     Optional<Person> findByNameAndAge(String name, int age);
 
     List<Person> findByName(String name);
+
+    Optional<Person> findByInvalid(String invalid);
 }
