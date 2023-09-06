@@ -232,7 +232,37 @@ public class MySQLDatabase implements Database {
 
     @Override
     public Collection<Object> findByAttributes(AttributeResolver resolver, Map<ColumnAttribute, Object> attributes) {
-        return null;
+        // Build query
+        List<ColumnAttribute> columnAttributes = new ArrayList<>();
+        List<String> conditionArguments = new ArrayList<>();
+
+        for (Map.Entry<ColumnAttribute, Object> entry : attributes.entrySet()) {
+            ColumnAttribute column = entry.getKey();
+            conditionArguments.add("%s = ?".formatted(column.columnName()));
+
+            columnAttributes.add(column);
+        }
+        String conditions = String.join(" AND ", conditionArguments);
+
+        String query = "SELECT * FROM %s WHERE %s".formatted(resolver.getFormattedTableNames(), conditions);
+
+        // Query database
+        return context.query(query, statement -> {
+            int index = 1;
+            for (ColumnAttribute column : columnAttributes) {
+                mapper.setDirectParameterValue(column, attributes.get(column), statement, index);
+                index++;
+            }
+        }, resultSet -> {
+            List<Object> result = new ArrayList<>();
+
+            while (resultSet.next()) {
+                Object instance = EntityCreator.fromColumns(resolver.getTargetClass(), resultSet, mapper, context);
+                result.add(instance);
+            }
+
+            return result;
+        });
     }
 
     @Override
