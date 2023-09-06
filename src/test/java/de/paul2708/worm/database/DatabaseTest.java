@@ -335,16 +335,16 @@ public abstract class DatabaseTest {
 
     @Test
     void testFindByNameAndAge() {
-        personRepository.save(new Person("Alice", 24));
+        Person youngAlice = personRepository.save(new Person("Alice", 24));
         personRepository.save(new Person("Bob", 24));
-        Person olderAlice = personRepository.save(new Person("Alice", 42));
+        personRepository.save(new Person("Alice", 42));
 
         assumeTrue(personRepository.findAll().size() == 3);
 
         Optional<Person> aliceOpt = personRepository.findByNameAndAge("Alice", 24);
 
         assertTrue(aliceOpt.isPresent());
-        assertEquals(olderAlice, aliceOpt.get());
+        assertEquals(youngAlice, aliceOpt.get());
     }
 
     @Test
@@ -357,6 +357,19 @@ public abstract class DatabaseTest {
 
         Optional<Person> aliceOpt = personRepository.findByNameAndAge("Bob", 42);
         assertTrue(aliceOpt.isEmpty());
+    }
+
+    @Test
+    void testMultipleFindByNameAndAge() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Alice", 24));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        assertThrows(RuntimeException.class, () -> {
+            personRepository.findByNameAndAge("Alice", 24);
+        });
     }
 
     @Test
