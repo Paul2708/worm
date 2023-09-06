@@ -7,10 +7,7 @@ import de.paul2708.worm.columns.UpdatedAt;
 import de.paul2708.worm.database.Database;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class InMemoryDatabase implements Database {
 
@@ -62,6 +59,20 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
+    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<String, Object> attributes) {
+        Map<Object, Object> map = database.getOrDefault(resolver.getTargetClass(), new HashMap<>());
+        List<Object> result = new ArrayList<>();
+
+        for (Object entity : map.values()) {
+            if (hasMatchingAttributes(resolver, entity, attributes)) {
+                result.add(entity);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public void delete(AttributeResolver resolver, Object entity) {
         Map<Object, Object> map = database.getOrDefault(resolver.getTargetClass(), new HashMap<>());
 
@@ -79,5 +90,19 @@ public class InMemoryDatabase implements Database {
                 database.put(resolver.getTargetClass(), map);
             }
         }
+    }
+
+    private boolean hasMatchingAttributes(AttributeResolver resolver, Object entity, Map<String, Object> attributes) {
+        for (ColumnAttribute column : resolver.getColumns()) {
+            if (attributes.containsKey(column.getTransformedColumnName())) {
+                Object actualValue = column.getValue(entity);
+
+                if (!actualValue.equals(attributes.get(column.getTransformedColumnName()))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }

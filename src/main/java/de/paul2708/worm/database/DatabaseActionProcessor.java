@@ -10,10 +10,10 @@ import de.paul2708.worm.repository.CrudRepository;
 import de.paul2708.worm.repository.Repository;
 import de.paul2708.worm.repository.actions.*;
 import de.paul2708.worm.util.DefaultValueChecker;
+import de.paul2708.worm.util.Reflections;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class DatabaseActionProcessor {
 
@@ -89,7 +89,23 @@ public class DatabaseActionProcessor {
                 attributes.put(columnNames[i], action.getMethodInformation().args()[i]);
             }
 
+            Collection<Object> entities = database.findByAttributes(resolver, attributes);
+            Class<?> returnType = action.getMethodInformation().method().getReturnType();
 
+            if (Reflections.isList(returnType)) {
+                return new ArrayList<>(entities);
+            } else if (Reflections.isSet(returnType)) {
+                return new HashSet<>(entities);
+            } else if (returnType.equals(Optional.class)) {
+                if (entities.isEmpty()) {
+                    return Optional.empty();
+                }
+                if (entities.size() == 1) {
+                    return Optional.of(entities.iterator().next());
+                }
+
+                throw new RuntimeException("Expected %s but retrieved multiple entities".formatted(Optional.class));
+            }
         }
 
         throw new IllegalArgumentException("Did not handle database action %s".formatted(action.getClass().getName()));
