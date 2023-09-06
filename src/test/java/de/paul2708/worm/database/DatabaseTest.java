@@ -331,4 +331,62 @@ public abstract class DatabaseTest {
     }
 
     // TODO: Test entity with exactly one primary key
+
+
+    @Test
+    void testFindByNameAndAge() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        Person olderAlice = personRepository.save(new Person("Alice", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        Optional<Person> aliceOpt = personRepository.findByNameAndAge("Alice", 24);
+
+        assertTrue(aliceOpt.isPresent());
+        assertEquals(olderAlice, aliceOpt.get());
+    }
+
+    @Test
+    void testEmptyFindByNameAndAge() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Alice", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        Optional<Person> aliceOpt = personRepository.findByNameAndAge("Bob", 42);
+        assertTrue(aliceOpt.isEmpty());
+    }
+
+    @Test
+    void testFindByName() {
+        Person aliceA = personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        Person aliceB = personRepository.save(new Person("Alice", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        List<Person> alices = personRepository.findByName("Alice");
+        assertIgnoringOrder(List.of(aliceA, aliceB), alices);
+    }
+
+    @Test
+    void testEmptyFindByName() {
+        personRepository.save(new Person("Alice", 24));
+        personRepository.save(new Person("Bob", 24));
+        personRepository.save(new Person("Sam", 42));
+
+        assumeTrue(personRepository.findAll().size() == 3);
+
+        List<Person> alices = personRepository.findByName("Paul");
+        assertTrue(alices.isEmpty());
+    }
+
+    private <T> void assertIgnoringOrder(List<T> expected, List<T> actual) {
+        Set<T> expectedSet = new HashSet<>(expected);
+        Set<T> actualSet = new HashSet<>(actual);
+
+        assertEquals(expectedSet, actualSet);
+    }
 }
