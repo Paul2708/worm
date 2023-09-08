@@ -20,6 +20,7 @@ public abstract class DatabaseTest {
     private RoundRepository roundRepository;
     private CollectorRepository collectorRepository;
     private BasicEntityRepository basicEntityRepository;
+    private CollectionEntityRepository collectionEntityRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -34,6 +35,8 @@ public abstract class DatabaseTest {
         this.roundRepository = Repository.create(RoundRepository.class, Round.class, emptyDatabase);
         this.collectorRepository = Repository.create(CollectorRepository.class, Collector.class, emptyDatabase);
         this.basicEntityRepository = Repository.create(BasicEntityRepository.class, BasicEntity.class, emptyDatabase);
+        this.collectionEntityRepository = Repository.create(CollectionEntityRepository.class, CollectionEntity.class,
+                emptyDatabase);
 
         assumeTrue(personRepository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
@@ -41,6 +44,7 @@ public abstract class DatabaseTest {
         assumeTrue(roundRepository.findAll().isEmpty());
         assumeTrue(collectorRepository.findAll().isEmpty());
         assumeTrue(basicEntityRepository.findAll().isEmpty());
+        assumeTrue(collectionEntityRepository.findAll().isEmpty());
     }
 
     @Test
@@ -562,4 +566,39 @@ public abstract class DatabaseTest {
     }
 
     // TODO: Test reserved keywords
+
+
+    @Test
+    void testMapDataType() {
+        CollectionEntity entity = new CollectionEntity();
+
+        entity.setMap(Map.of("foo", 1337, "bar", 42));
+        assertEquals(Map.of("foo", 1337, "bar", 42), saveAndFind(entity).getMap());
+
+        entity.setMap(Map.of());
+        assertEquals(Map.of(), saveAndFind(entity).getMap());
+
+        entity.setMap(Map.of("foo", 1337));
+        assertEquals(Map.of("foo", 1337), saveAndFind(entity).getMap());
+    }
+
+    @Test
+    void testMapDataTypeDeletion() {
+        CollectionEntity entity = new CollectionEntity();
+        entity.setMap(Map.of("foo", 1337, "bar", 42));
+
+        collectionEntityRepository.delete(collectionEntityRepository.save(entity));
+
+        entity.setMap(Map.of("a", 1, "b", 2, "c", 3));
+        assertEquals(Map.of("a", 1, "b", 2, "c", 3), saveAndFind(entity).getMap());
+
+    }
+
+    private CollectionEntity saveAndFind(CollectionEntity entity) {
+        CollectionEntity stored = collectionEntityRepository.save(entity);
+        Optional<CollectionEntity> entityOpt = collectionEntityRepository.findById(stored.getId());
+        assertTrue(entityOpt.isPresent());
+
+        return entityOpt.get();
+    }
 }

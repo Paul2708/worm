@@ -21,7 +21,7 @@ public class MySQLDatabaseTest extends DatabaseTest {
                     "jdbc:mysql://%s:%s/%s".formatted(HOST, PORT, DATABASE), USERNAME, PASSWORD);
             Statement statement = connection.createStatement();
             statement.execute("DROP TABLE IF EXISTS persons, cars, fleets, rounds, collectors, collectors_badges, " +
-                    "collectors_primes, basic_entities");
+                    "collectors_primes, basic_entities, collection_entities, collection_entities_mapping");
         } catch (SQLException e) {
             Assertions.fail("Failed to clear tables", e);
         }
