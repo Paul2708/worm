@@ -19,6 +19,7 @@ public abstract class DatabaseTest {
     private FleetRepository fleetRepository;
     private RoundRepository roundRepository;
     private CollectorRepository collectorRepository;
+    private BasicEntityRepository basicEntityRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -32,12 +33,14 @@ public abstract class DatabaseTest {
         this.fleetRepository = Repository.create(FleetRepository.class, Fleet.class, emptyDatabase);
         this.roundRepository = Repository.create(RoundRepository.class, Round.class, emptyDatabase);
         this.collectorRepository = Repository.create(CollectorRepository.class, Collector.class, emptyDatabase);
+        this.basicEntityRepository = Repository.create(BasicEntityRepository.class, BasicEntity.class, emptyDatabase);
 
         assumeTrue(personRepository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
         assumeTrue(fleetRepository.findAll().isEmpty());
         assumeTrue(roundRepository.findAll().isEmpty());
         assumeTrue(collectorRepository.findAll().isEmpty());
+        assumeTrue(basicEntityRepository.findAll().isEmpty());
     }
 
     @Test
@@ -144,7 +147,7 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void testBooleanDataType() {
+    void testBooleanDataTypeInPerson() {
         Person person = personRepository.save(new Person("Max", 42));
         assumeFalse(person.isBlocked());
 
@@ -432,4 +435,117 @@ public abstract class DatabaseTest {
     void testArbitraryDefaultMethod() {
         assertEquals("bar", personRepository.foo());
     }
+
+    @Test
+    void testBooleanDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setBoolean(true);
+        assertTrue(saveAndFind(entity).getBoolean());
+
+        entity.setBoolean(false);
+        assertFalse(saveAndFind(entity).getBoolean());
+    }
+
+    @Test
+    void testByteDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setByte((byte) 42);
+        assertEquals((byte) 42, saveAndFind(entity).getByte());
+
+        entity.setByte(Byte.MIN_VALUE);
+        assertEquals(Byte.MIN_VALUE, saveAndFind(entity).getByte());
+
+        entity.setByte(Byte.MAX_VALUE);
+        assertEquals(Byte.MAX_VALUE, saveAndFind(entity).getByte());
+    }
+
+    @Test
+    void testDoubleDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setDouble(Math.PI);
+        assertEquals(Math.PI, saveAndFind(entity).getDouble(), 0.0001);
+
+        entity.setDouble(Double.MIN_VALUE);
+        assertEquals(Double.MIN_VALUE, saveAndFind(entity).getDouble(), 0.0001);
+
+        entity.setDouble(Double.MAX_VALUE);
+        assertEquals(Double.MAX_VALUE, saveAndFind(entity).getDouble(), 0.0001);
+    }
+
+    @Test
+    void testIntDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setInt(133742);
+        assertEquals(133742, saveAndFind(entity).getInt());
+
+        entity.setInt(Integer.MIN_VALUE);
+        assertEquals(Integer.MIN_VALUE, saveAndFind(entity).getInt());
+
+        entity.setInt(Integer.MAX_VALUE);
+        assertEquals(Integer.MAX_VALUE, saveAndFind(entity).getInt());
+    }
+
+    @Test
+    void testLongDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setLong(((long) Integer.MAX_VALUE) + 1337L);
+        assertEquals(((long) Integer.MAX_VALUE) + 1337L, saveAndFind(entity).getLong());
+
+        entity.setLong(Long.MIN_VALUE);
+        assertEquals(Long.MIN_VALUE, saveAndFind(entity).getLong());
+
+        entity.setLong(Long.MAX_VALUE);
+        assertEquals(Long.MAX_VALUE, saveAndFind(entity).getLong());
+    }
+
+    @Test
+    void testShortDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setShort((short) 42);
+        assertEquals((short) 42, saveAndFind(entity).getShort());
+
+        entity.setShort(Short.MIN_VALUE);
+        assertEquals(Short.MIN_VALUE, saveAndFind(entity).getShort());
+
+        entity.setShort(Short.MAX_VALUE);
+        assertEquals(Short.MAX_VALUE, saveAndFind(entity).getShort());
+    }
+
+    @Test
+    void testStringDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setString("Hello World");
+        assertEquals("Hello World", saveAndFind(entity).getString());
+
+        entity.setString("");
+        assertEquals("", saveAndFind(entity).getString());
+
+        entity.setString("τϠĄ@");
+        assertEquals("τϠĄ@", saveAndFind(entity).getString());
+    }
+
+    @Test
+    void testUuidDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setUuid(UUID.fromString("bc3b3f26-e70c-4c66-bdec-5bd7246967bc"));
+        assertEquals(UUID.fromString("bc3b3f26-e70c-4c66-bdec-5bd7246967bc"), saveAndFind(entity).getUuid());
+    }
+
+    private BasicEntity saveAndFind(BasicEntity entity) {
+        BasicEntity stored = basicEntityRepository.save(entity);
+        Optional<BasicEntity> entityOpt = basicEntityRepository.findById(stored.getId());
+        assertTrue(entityOpt.isPresent());
+
+        return entityOpt.get();
+    }
+
+    // TODO: Test reserved keywords
 }
