@@ -24,7 +24,7 @@ public class ListProvider implements CollectionProvider {
 
     @Override
     public int size(Object entity, ColumnAttribute columnAttribute) {
-        return ((List<Object>) columnAttribute.getValue(entity)).size();
+        return ((List<?>) columnAttribute.getValue(entity)).size();
     }
 
     @Override
