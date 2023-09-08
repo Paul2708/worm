@@ -591,7 +591,34 @@ public abstract class DatabaseTest {
 
         entity.setMap(Map.of("a", 1, "b", 2, "c", 3));
         assertEquals(Map.of("a", 1, "b", 2, "c", 3), saveAndFind(entity).getMap());
+    }
 
+    @Test
+    void testArrayDataType() {
+        CollectionEntity entity = new CollectionEntity();
+
+        entity.setArray(new long[]{0, 42, 1337});
+        assertArrayEquals(new long[]{0, 42, 1337}, saveAndFind(entity).getArray());
+
+        entity.setArray(new long[]{});
+        assertArrayEquals(new long[]{}, saveAndFind(entity).getArray());
+
+        entity.setArray(new long[]{-123456789});
+        assertArrayEquals(new long[]{-123456789}, saveAndFind(entity).getArray());
+
+        entity.setArray(new long[1337]);
+        assertArrayEquals(new long[1337], saveAndFind(entity).getArray());
+    }
+
+    @Test
+    void testArrayDataTypeDeletion() {
+        CollectionEntity entity = new CollectionEntity();
+        entity.setArray(new long[]{0, 42, 1337});
+
+        collectionEntityRepository.delete(collectionEntityRepository.save(entity));
+
+        entity.setArray(new long[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        assertArrayEquals(new long[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, saveAndFind(entity).getArray());
     }
 
     private CollectionEntity saveAndFind(CollectionEntity entity) {

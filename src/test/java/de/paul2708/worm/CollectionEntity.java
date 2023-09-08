@@ -6,6 +6,7 @@ import de.paul2708.worm.columns.PrimaryKey;
 import de.paul2708.worm.columns.Table;
 import de.paul2708.worm.columns.generator.IntegerGenerator;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Table("collection_entities")
@@ -23,16 +24,28 @@ public class CollectionEntity {
     @Column("mapping")
     private Map<String, Integer> map;
 
-    public CollectionEntity() {
+    @Column("array")
+    private long[] array;
 
+    public CollectionEntity() {
+        this.map = new HashMap<>();
+        this.array = new long[0];
     }
 
     public void setMap(Map<String, Integer> map) {
         this.map = map;
     }
 
+    public void setArray(long[] array) {
+        this.array = array;
+    }
+
     public Map<String, Integer> getMap() {
         return map;
+    }
+
+    public long[] getArray() {
+        return array;
     }
 
     public int getId() {

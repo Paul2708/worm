@@ -34,6 +34,15 @@ public class ReflectionsTest {
         assertEquals(Integer.class, elementTypes.get(1));
     }
 
+    private long[] array;
+
+    @Test
+    void testArrayElementType() {
+        Field arrayField = Reflections.getField(ReflectionsTest.class, "array");
+
+        assertEquals(long.class, Reflections.getElementTypeFromArray(arrayField));
+    }
+
     @Test
     void testListClass() {
         assertTrue(Reflections.isList(List.class));
