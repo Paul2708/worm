@@ -25,7 +25,7 @@ public class BasicEntity {
     @Column("a_double")
     private double aDouble;
 
-    @Column("a_int")
+    @Column("an_int")
     private int anInt;
 
     @Column("a_long")
@@ -40,9 +40,13 @@ public class BasicEntity {
     @Column("a_uuid")
     private UUID uuid;
 
+    @Column("an_enum")
+    private Type aEnum;
+
     public BasicEntity() {
         this.string = "";
         this.uuid = UUID.randomUUID();
+        this.aEnum = Type.MEDIUM;
     }
 
     public void setBoolean(boolean aBoolean) {
@@ -75,6 +79,10 @@ public class BasicEntity {
 
     public void setUuid(UUID uuid) {
         this.uuid = uuid;
+    }
+
+    public void setEnum(Type aEnum) {
+        this.aEnum = aEnum;
     }
 
     public int getId() {
@@ -111,5 +119,25 @@ public class BasicEntity {
 
     public UUID getUuid() {
         return uuid;
+    }
+
+    public Type getEnum() {
+        return aEnum;
+    }
+
+    public enum Type {
+        SMALL(0),
+        MEDIUM(1),
+        HUGE(2);
+
+        private final int index;
+
+        Type(int index) {
+            this.index = index;
+        }
+
+        public int getIndex() {
+            return index;
+        }
     }
 }

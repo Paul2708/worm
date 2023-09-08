@@ -539,6 +539,20 @@ public abstract class DatabaseTest {
         assertEquals(UUID.fromString("bc3b3f26-e70c-4c66-bdec-5bd7246967bc"), saveAndFind(entity).getUuid());
     }
 
+    @Test
+    void testEnumDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setEnum(BasicEntity.Type.SMALL);
+        assertEquals(BasicEntity.Type.SMALL, saveAndFind(entity).getEnum());
+
+        entity.setEnum(BasicEntity.Type.MEDIUM);
+        assertEquals(BasicEntity.Type.MEDIUM, saveAndFind(entity).getEnum());
+
+        entity.setEnum(BasicEntity.Type.HUGE);
+        assertEquals(BasicEntity.Type.HUGE, saveAndFind(entity).getEnum());
+    }
+
     private BasicEntity saveAndFind(BasicEntity entity) {
         BasicEntity stored = basicEntityRepository.save(entity);
         Optional<BasicEntity> entityOpt = basicEntityRepository.findById(stored.getId());

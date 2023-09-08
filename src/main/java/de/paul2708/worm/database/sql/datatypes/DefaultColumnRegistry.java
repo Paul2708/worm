@@ -22,6 +22,7 @@ final class DefaultColumnRegistry implements ColumnsRegistry {
         register(new BooleanColumnDataType());
         register(new ByteColumnDataType());
         register(new DoubleColumnDataType());
+        register(new EnumColumnDataType());
         register(new IntegerColumnDataType());
         register(new LocalDateTimeColumnDataType());
         register(new LongColumnDataType());
