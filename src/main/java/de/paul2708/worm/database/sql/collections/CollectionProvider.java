@@ -34,6 +34,8 @@ public interface CollectionProvider {
             return new SetProvider();
         } else if (Reflections.isMap(attribute.type())) {
             return new MapProvider();
+        } else if (attribute.type().isArray()) {
+            return new ArrayProvider();
         }
 
         throw new IllegalArgumentException("There is no collection provider handling the type %s"

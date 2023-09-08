@@ -1,9 +1,6 @@
 package de.paul2708.worm.util;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.*;
 
 public class Reflections {
@@ -24,6 +21,15 @@ public class Reflections {
         }
 
         return params;
+    }
+
+    public static Class<?> getElementTypeFromArray(Field arrayField) {
+        Class<?> arrayClass = arrayField.getType();
+        if (!arrayClass.isArray()) {
+            throw new IllegalArgumentException("The given class %s is not a class of an array.".formatted(arrayClass));
+        }
+
+        return arrayClass.getComponentType();
     }
 
     public static boolean isList(Class<?> listImplClass) {
