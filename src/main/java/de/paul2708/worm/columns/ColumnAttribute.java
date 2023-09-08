@@ -115,7 +115,7 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
     }
 
     public boolean isCollection() {
-        return Reflections.isSet(type) || Reflections.isList(type);
+        return Reflections.isSet(type) || Reflections.isList(type) || Reflections.isMap(type);
     }
 
     public boolean isAutoTimestamp() {
