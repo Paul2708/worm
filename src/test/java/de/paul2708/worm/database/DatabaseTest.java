@@ -19,6 +19,8 @@ public abstract class DatabaseTest {
     private FleetRepository fleetRepository;
     private RoundRepository roundRepository;
     private CollectorRepository collectorRepository;
+    private BasicEntityRepository basicEntityRepository;
+    private CollectionEntityRepository collectionEntityRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -32,12 +34,17 @@ public abstract class DatabaseTest {
         this.fleetRepository = Repository.create(FleetRepository.class, Fleet.class, emptyDatabase);
         this.roundRepository = Repository.create(RoundRepository.class, Round.class, emptyDatabase);
         this.collectorRepository = Repository.create(CollectorRepository.class, Collector.class, emptyDatabase);
+        this.basicEntityRepository = Repository.create(BasicEntityRepository.class, BasicEntity.class, emptyDatabase);
+        this.collectionEntityRepository = Repository.create(CollectionEntityRepository.class, CollectionEntity.class,
+                emptyDatabase);
 
         assumeTrue(personRepository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
         assumeTrue(fleetRepository.findAll().isEmpty());
         assumeTrue(roundRepository.findAll().isEmpty());
         assumeTrue(collectorRepository.findAll().isEmpty());
+        assumeTrue(basicEntityRepository.findAll().isEmpty());
+        assumeTrue(collectionEntityRepository.findAll().isEmpty());
     }
 
     @Test
@@ -144,7 +151,7 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void testBooleanDataType() {
+    void testBooleanDataTypeInPerson() {
         Person person = personRepository.save(new Person("Max", 42));
         assumeFalse(person.isBlocked());
 
@@ -431,5 +438,194 @@ public abstract class DatabaseTest {
     @Test
     void testArbitraryDefaultMethod() {
         assertEquals("bar", personRepository.foo());
+    }
+
+    @Test
+    void testBooleanDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setBoolean(true);
+        assertTrue(saveAndFind(entity).getBoolean());
+
+        entity.setBoolean(false);
+        assertFalse(saveAndFind(entity).getBoolean());
+    }
+
+    @Test
+    void testByteDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setByte((byte) 42);
+        assertEquals((byte) 42, saveAndFind(entity).getByte());
+
+        entity.setByte(Byte.MIN_VALUE);
+        assertEquals(Byte.MIN_VALUE, saveAndFind(entity).getByte());
+
+        entity.setByte(Byte.MAX_VALUE);
+        assertEquals(Byte.MAX_VALUE, saveAndFind(entity).getByte());
+    }
+
+    @Test
+    void testDoubleDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setDouble(Math.PI);
+        assertEquals(Math.PI, saveAndFind(entity).getDouble(), 0.0001);
+
+        entity.setDouble(Double.MIN_VALUE);
+        assertEquals(Double.MIN_VALUE, saveAndFind(entity).getDouble(), 0.0001);
+
+        entity.setDouble(Double.MAX_VALUE);
+        assertEquals(Double.MAX_VALUE, saveAndFind(entity).getDouble(), 0.0001);
+    }
+
+    @Test
+    void testIntDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setInt(133742);
+        assertEquals(133742, saveAndFind(entity).getInt());
+
+        entity.setInt(Integer.MIN_VALUE);
+        assertEquals(Integer.MIN_VALUE, saveAndFind(entity).getInt());
+
+        entity.setInt(Integer.MAX_VALUE);
+        assertEquals(Integer.MAX_VALUE, saveAndFind(entity).getInt());
+    }
+
+    @Test
+    void testLongDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setLong(((long) Integer.MAX_VALUE) + 1337L);
+        assertEquals(((long) Integer.MAX_VALUE) + 1337L, saveAndFind(entity).getLong());
+
+        entity.setLong(Long.MIN_VALUE);
+        assertEquals(Long.MIN_VALUE, saveAndFind(entity).getLong());
+
+        entity.setLong(Long.MAX_VALUE);
+        assertEquals(Long.MAX_VALUE, saveAndFind(entity).getLong());
+    }
+
+    @Test
+    void testShortDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setShort((short) 42);
+        assertEquals((short) 42, saveAndFind(entity).getShort());
+
+        entity.setShort(Short.MIN_VALUE);
+        assertEquals(Short.MIN_VALUE, saveAndFind(entity).getShort());
+
+        entity.setShort(Short.MAX_VALUE);
+        assertEquals(Short.MAX_VALUE, saveAndFind(entity).getShort());
+    }
+
+    @Test
+    void testStringDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setString("Hello World");
+        assertEquals("Hello World", saveAndFind(entity).getString());
+
+        entity.setString("");
+        assertEquals("", saveAndFind(entity).getString());
+
+        entity.setString("τϠĄ@");
+        assertEquals("τϠĄ@", saveAndFind(entity).getString());
+    }
+
+    @Test
+    void testUuidDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setUuid(UUID.fromString("bc3b3f26-e70c-4c66-bdec-5bd7246967bc"));
+        assertEquals(UUID.fromString("bc3b3f26-e70c-4c66-bdec-5bd7246967bc"), saveAndFind(entity).getUuid());
+    }
+
+    @Test
+    void testEnumDataType() {
+        BasicEntity entity = new BasicEntity();
+
+        entity.setEnum(BasicEntity.Type.SMALL);
+        assertEquals(BasicEntity.Type.SMALL, saveAndFind(entity).getEnum());
+
+        entity.setEnum(BasicEntity.Type.MEDIUM);
+        assertEquals(BasicEntity.Type.MEDIUM, saveAndFind(entity).getEnum());
+
+        entity.setEnum(BasicEntity.Type.HUGE);
+        assertEquals(BasicEntity.Type.HUGE, saveAndFind(entity).getEnum());
+    }
+
+    private BasicEntity saveAndFind(BasicEntity entity) {
+        BasicEntity stored = basicEntityRepository.save(entity);
+        Optional<BasicEntity> entityOpt = basicEntityRepository.findById(stored.getId());
+        assertTrue(entityOpt.isPresent());
+
+        return entityOpt.get();
+    }
+
+    // TODO: Test reserved keywords
+
+
+    @Test
+    void testMapDataType() {
+        CollectionEntity entity = new CollectionEntity();
+
+        entity.setMap(Map.of("foo", 1337, "bar", 42));
+        assertEquals(Map.of("foo", 1337, "bar", 42), saveAndFind(entity).getMap());
+
+        entity.setMap(Map.of());
+        assertEquals(Map.of(), saveAndFind(entity).getMap());
+
+        entity.setMap(Map.of("foo", 1337));
+        assertEquals(Map.of("foo", 1337), saveAndFind(entity).getMap());
+    }
+
+    @Test
+    void testMapDataTypeDeletion() {
+        CollectionEntity entity = new CollectionEntity();
+        entity.setMap(Map.of("foo", 1337, "bar", 42));
+
+        collectionEntityRepository.delete(collectionEntityRepository.save(entity));
+
+        entity.setMap(Map.of("a", 1, "b", 2, "c", 3));
+        assertEquals(Map.of("a", 1, "b", 2, "c", 3), saveAndFind(entity).getMap());
+    }
+
+    @Test
+    void testArrayDataType() {
+        CollectionEntity entity = new CollectionEntity();
+
+        entity.setArray(new long[]{0, 42, 1337});
+        assertArrayEquals(new long[]{0, 42, 1337}, saveAndFind(entity).getArray());
+
+        entity.setArray(new long[]{});
+        assertArrayEquals(new long[]{}, saveAndFind(entity).getArray());
+
+        entity.setArray(new long[]{-123456789});
+        assertArrayEquals(new long[]{-123456789}, saveAndFind(entity).getArray());
+
+        entity.setArray(new long[1337]);
+        assertArrayEquals(new long[1337], saveAndFind(entity).getArray());
+    }
+
+    @Test
+    void testArrayDataTypeDeletion() {
+        CollectionEntity entity = new CollectionEntity();
+        entity.setArray(new long[]{0, 42, 1337});
+
+        collectionEntityRepository.delete(collectionEntityRepository.save(entity));
+
+        entity.setArray(new long[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        assertArrayEquals(new long[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, saveAndFind(entity).getArray());
+    }
+
+    private CollectionEntity saveAndFind(CollectionEntity entity) {
+        CollectionEntity stored = collectionEntityRepository.save(entity);
+        Optional<CollectionEntity> entityOpt = collectionEntityRepository.findById(stored.getId());
+        assertTrue(entityOpt.isPresent());
+
+        return entityOpt.get();
     }
 }

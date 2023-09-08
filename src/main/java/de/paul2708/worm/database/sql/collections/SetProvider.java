@@ -20,7 +20,7 @@ public class SetProvider implements CollectionProvider {
 
     @Override
     public int size(Object entity, ColumnAttribute columnAttribute) {
-        return ((Set<Object>) columnAttribute.getValue(entity)).size();
+        return ((Set<?>) columnAttribute.getValue(entity)).size();
     }
 
     @Override

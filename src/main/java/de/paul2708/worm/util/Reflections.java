@@ -1,11 +1,7 @@
 package de.paul2708.worm.util;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.*;
+import java.util.*;
 
 public class Reflections {
 
@@ -15,12 +11,37 @@ public class Reflections {
         return (Class<?>) parameterizedType.getActualTypeArguments()[0];
     }
 
+    public static List<Class<?>> getElementTypes(Field mapField) {
+        ParameterizedType parameterizedType = (ParameterizedType) mapField.getGenericType();
+
+        List<Class<?>> params = new LinkedList<>();
+
+        for (Type actualTypeArgument : parameterizedType.getActualTypeArguments()) {
+            params.add((Class<?>) actualTypeArgument);
+        }
+
+        return params;
+    }
+
+    public static Class<?> getElementTypeFromArray(Field arrayField) {
+        Class<?> arrayClass = arrayField.getType();
+        if (!arrayClass.isArray()) {
+            throw new IllegalArgumentException("The given class %s is not a class of an array.".formatted(arrayClass));
+        }
+
+        return arrayClass.getComponentType();
+    }
+
     public static boolean isList(Class<?> listImplClass) {
         return hasInterface(listImplClass, List.class);
     }
 
     public static boolean isSet(Class<?> setImplClass) {
         return hasInterface(setImplClass, Set.class);
+    }
+
+    public static boolean isMap(Class<?> mapImplClass) {
+        return hasInterface(mapImplClass, Map.class);
     }
 
     private static boolean hasInterface(Class<?> implClass, Class<?> interfaceClass) {

@@ -89,8 +89,7 @@ public class CollectionSupportTable {
                 index++;
 
                 for (Object sqlValue : sqlValues) {
-                    mapper.setDirectParameterValue(Reflections.getElementType(collectionAttribute.getField()),
-                            sqlValue, statement, index);
+                    mapper.setDirectParameterValue(sqlValue.getClass(), sqlValue, statement, index);
                     index++;
                 }
             }
