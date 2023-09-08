@@ -20,10 +20,14 @@ final class DefaultColumnRegistry implements ColumnsRegistry {
         dataTypes.clear(); // reset to prevent exception when reloading (See #register)
 
         register(new BooleanColumnDataType());
+        register(new ByteColumnDataType());
+        register(new DoubleColumnDataType());
         register(new IntegerColumnDataType());
+        register(new LocalDateTimeColumnDataType());
+        register(new LongColumnDataType());
+        register(new ShortColumnDataType());
         register(new StringColumnDataType());
         register(new UUIDColumnDataType());
-        register(new LocalDateTimeColumnDataType());
     }
 
     @Override
