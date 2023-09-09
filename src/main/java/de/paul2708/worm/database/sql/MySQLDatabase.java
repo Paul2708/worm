@@ -124,8 +124,10 @@ public class MySQLDatabase implements Database {
             }
         }
 
-        String query = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s"
-                .formatted(resolver.getTable(), sqlColumns, sqlValues, sqlUpdate);
+        String query = "INSERT INTO %s (%s) VALUES (%s)".formatted(resolver.getTable(), sqlColumns, sqlValues);
+        if (!resolver.getColumnsWithoutPrimaryKey().isEmpty()) {
+            query += " ON DUPLICATE KEY UPDATE %s".formatted(sqlUpdate);
+        }
 
         context.query(query, statement -> {
             int index = 1;
