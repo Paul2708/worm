@@ -17,10 +17,6 @@ public class CollectionEntity {
     @Column("id")
     private int id;
 
-    // TODO: Should be removed after we fixed the issue that at least one "normal" column must be present
-    @Column("to_be_deleted")
-    private String toBeDeleted = "to be deleted";
-
     @Column("mapping")
     private Map<String, Integer> map;
 
@@ -30,6 +26,10 @@ public class CollectionEntity {
     public CollectionEntity() {
         this.map = new HashMap<>();
         this.array = new long[0];
+    }
+
+    public void resetId() {
+        this.id = 0;
     }
 
     public void setMap(Map<String, Integer> map) {

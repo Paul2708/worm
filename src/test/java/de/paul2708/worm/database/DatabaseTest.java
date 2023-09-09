@@ -340,9 +340,6 @@ public abstract class DatabaseTest {
         assertEquals(List.of(2, 3), storedCollector.getPrimeNumbers());
     }
 
-    // TODO: Test entity with exactly one primary key
-
-
     @Test
     void testFindByNameAndAge() {
         Person youngAlice = personRepository.save(new Person("Alice", 24));
@@ -625,6 +622,8 @@ public abstract class DatabaseTest {
     }
 
     private CollectionEntity saveAndFind(CollectionEntity entity) {
+        entity.resetId();
+
         CollectionEntity stored = collectionEntityRepository.save(entity);
         Optional<CollectionEntity> entityOpt = collectionEntityRepository.findById(stored.getId());
         assertTrue(entityOpt.isPresent());
