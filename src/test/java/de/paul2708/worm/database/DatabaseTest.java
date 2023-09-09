@@ -628,4 +628,14 @@ public abstract class DatabaseTest {
 
         return entityOpt.get();
     }
+
+    @Test
+    void testNullableAttribute() {
+        Person person = new Person(null, 42);
+        int id = personRepository.save(person).getId();
+
+        Optional<Person> personOpt = personRepository.findById(id);
+        assertTrue(personOpt.isPresent());
+        assertNull(personOpt.get().getName());
+    }
 }

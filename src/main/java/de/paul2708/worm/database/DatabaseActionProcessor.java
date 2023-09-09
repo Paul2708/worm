@@ -44,6 +44,10 @@ public class DatabaseActionProcessor {
             // Check max length
             for (ColumnAttribute column : resolver.getColumns()) {
                 if (column.hasMaximumLength()) {
+                    if (column.getValue(targetEntity) == null) {
+                        continue;
+                    }
+
                     String text = (String) column.getValue(targetEntity);
 
                     if (text.length() > column.getProperty(LengthRestrictedProperty.class).length()) {
