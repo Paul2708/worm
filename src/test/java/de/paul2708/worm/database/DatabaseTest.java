@@ -21,6 +21,7 @@ public abstract class DatabaseTest {
     private CollectorRepository collectorRepository;
     private BasicEntityRepository basicEntityRepository;
     private CollectionEntityRepository collectionEntityRepository;
+    private SmallEntityRepository smallEntityRepository;
 
     public abstract Database createEmptyDatabase();
 
@@ -37,6 +38,7 @@ public abstract class DatabaseTest {
         this.basicEntityRepository = Repository.create(BasicEntityRepository.class, BasicEntity.class, emptyDatabase);
         this.collectionEntityRepository = Repository.create(CollectionEntityRepository.class, CollectionEntity.class,
                 emptyDatabase);
+        this.smallEntityRepository = Repository.create(SmallEntityRepository.class, SmallEntity.class, emptyDatabase);
 
         assumeTrue(personRepository.findAll().isEmpty());
         assumeTrue(carRepository.findAll().isEmpty());
@@ -45,6 +47,7 @@ public abstract class DatabaseTest {
         assumeTrue(collectorRepository.findAll().isEmpty());
         assumeTrue(basicEntityRepository.findAll().isEmpty());
         assumeTrue(collectionEntityRepository.findAll().isEmpty());
+        assumeTrue(smallEntityRepository.findAll().isEmpty());
     }
 
     @Test
@@ -337,9 +340,6 @@ public abstract class DatabaseTest {
         assertEquals(List.of(2, 3), storedCollector.getPrimeNumbers());
     }
 
-    // TODO: Test entity with exactly one primary key
-
-
     @Test
     void testFindByNameAndAge() {
         Person youngAlice = personRepository.save(new Person("Alice", 24));
@@ -622,11 +622,23 @@ public abstract class DatabaseTest {
     }
 
     private CollectionEntity saveAndFind(CollectionEntity entity) {
+        entity.resetId();
+
         CollectionEntity stored = collectionEntityRepository.save(entity);
         Optional<CollectionEntity> entityOpt = collectionEntityRepository.findById(stored.getId());
         assertTrue(entityOpt.isPresent());
 
         return entityOpt.get();
+    }
+
+    @Test
+    void testOnlyPrimaryKey() {
+        SmallEntity entity = new SmallEntity("Sam");
+        smallEntityRepository.save(entity);
+
+        Optional<SmallEntity> entityOpt = smallEntityRepository.findById("Sam");
+        assertTrue(entityOpt.isPresent());
+        assertEquals("Sam", entityOpt.get().getName());
     }
 
     @Test
