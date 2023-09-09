@@ -22,7 +22,7 @@ public class MySQLDatabaseTest extends DatabaseTest {
             Statement statement = connection.createStatement();
             statement.execute("DROP TABLE IF EXISTS persons, cars, fleets, rounds, collectors, collectors_badges, " +
                     "collectors_primes, basic_entities, collection_entities, collection_entities_mapping, "
-                    + "collection_entities_array");
+                    + "collection_entities_array, small_entities");
         } catch (SQLException e) {
             Assertions.fail("Failed to clear tables", e);
         }
