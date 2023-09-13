@@ -168,7 +168,7 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void testForeignKey() {
+    void testReference() {
         assumeTrue(personRepository.findAll().isEmpty());
 
         // Save fleet
@@ -201,7 +201,7 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void testAlreadyExistingForeignKey() {
+    void testAlreadyExistingReference() {
         Person person = personRepository.save(new Person("Max", 42));
         Fleet fleet = fleetRepository.save(new Fleet("My Fleet", person));
 
@@ -215,7 +215,7 @@ public abstract class DatabaseTest {
         assertNotNull(restoredFleet.getPerson());
         assertEquals(person, restoredFleet.getPerson());
 
-        // Test duplicated foreign entity
+        // Test duplicated reference
         assertEquals(1, personRepository.findAll().size());
     }
 

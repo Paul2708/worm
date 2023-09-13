@@ -17,7 +17,7 @@ public final class EntityCreator {
         Map<String, Object> foreignFields = new HashMap<>();
 
         // Create foreign key objects
-        for (ColumnAttribute foreignKey : resolver.getForeignKeys()) {
+        for (ColumnAttribute foreignKey : resolver.getReferences()) {
             foreignFields.put(foreignKey.fieldName(), fromColumns(foreignKey.type(), resultSet, mapper, context));
         }
 

@@ -1,7 +1,7 @@
 package de.paul2708.worm.database.sql;
 
 import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.properties.ForeignKeyProperty;
+import de.paul2708.worm.columns.properties.ReferenceProperty;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import java.sql.PreparedStatement;
@@ -17,8 +17,8 @@ public class ColumnMapper {
     }
 
     public void setParameterValue(ColumnAttribute column, Object entity, PreparedStatement statement, int index) {
-        if (column.isForeignKey()) {
-            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignIdentifier();
+        if (column.isReference()) {
+            ColumnAttribute foreignPrimaryKey = column.getProperty(ReferenceProperty.class).getForeignIdentifier();
             Object value = foreignPrimaryKey.getValue(column.getValue(entity));
 
             setValue(statement, value.getClass(), index, column, value);

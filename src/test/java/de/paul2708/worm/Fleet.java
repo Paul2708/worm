@@ -16,7 +16,7 @@ public class Fleet {
     @Column("name")
     private String name;
 
-    @ForeignKey
+    @Reference
     @Column("owner_id")
     private Person person;
 

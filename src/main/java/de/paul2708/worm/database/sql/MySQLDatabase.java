@@ -6,7 +6,7 @@ import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.columns.CreatedAt;
 import de.paul2708.worm.columns.UpdatedAt;
-import de.paul2708.worm.columns.properties.ForeignKeyProperty;
+import de.paul2708.worm.columns.properties.ReferenceProperty;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
 import de.paul2708.worm.database.sql.context.SQLFunction;
@@ -72,10 +72,10 @@ public class MySQLDatabase implements Database {
                 .map(column -> "%s %s".formatted(column.columnName(), mapper.toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
-        String foreignKeyReferences = resolver.getForeignKeys().stream()
+        String foreignKeyReferences = resolver.getReferences().stream()
                 .map(column -> {
-                    String table = column.getProperty(ForeignKeyProperty.class).getForeignTable();
-                    String primaryKey = column.getProperty(ForeignKeyProperty.class).getForeignIdentifier().columnName();
+                    String table = column.getProperty(ReferenceProperty.class).getForeignTable();
+                    String primaryKey = column.getProperty(ReferenceProperty.class).getForeignIdentifier().columnName();
 
                     return "FOREIGN KEY (%s) REFERENCES %s(%s)"
                             .formatted(column.columnName(), table, primaryKey);
@@ -85,7 +85,7 @@ public class MySQLDatabase implements Database {
         String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s)"
                 .formatted(resolver.getTable(), sqlColumns, resolver.getIdentifier().columnName());
 
-        if (!resolver.getForeignKeys().isEmpty()) {
+        if (!resolver.getReferences().isEmpty()) {
             query += ", %s".formatted(foreignKeyReferences) + ")";
         } else {
             query += ")";
@@ -198,7 +198,7 @@ public class MySQLDatabase implements Database {
         // Build query
         String query = "SELECT * FROM %s%s"
                 .formatted(resolver.getFormattedTableNames(),
-                        resolver.getForeignKeys().isEmpty() ? "" : " WHERE " + buildConditions(resolver));
+                        resolver.getReferences().isEmpty() ? "" : " WHERE " + buildConditions(resolver));
 
         // Query database
         return context.query(query, (SQLFunction<Collection<Object>>) resultSet -> {
@@ -219,7 +219,7 @@ public class MySQLDatabase implements Database {
         String query = "SELECT * FROM %s WHERE %s = ?%s"
                 .formatted(resolver.getFormattedTableNames(),
                         resolver.getIdentifier().getFullColumnName(),
-                        resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
+                        resolver.getReferences().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
         // Query database
         return context.query(query, statement -> {
@@ -289,9 +289,9 @@ public class MySQLDatabase implements Database {
     }
 
     private String buildConditions(AttributeResolver resolver) {
-        return resolver.getForeignKeys().stream()
+        return resolver.getReferences().stream()
                 .map(column -> {
-                    String fullColumnName = column.getProperty(ForeignKeyProperty.class).getForeignIdentifier()
+                    String fullColumnName = column.getProperty(ReferenceProperty.class).getForeignIdentifier()
                             .getFullColumnName();
                     return column.getFullColumnName() + " = " + fullColumnName;
                 })

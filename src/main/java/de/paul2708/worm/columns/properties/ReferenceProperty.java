@@ -3,20 +3,20 @@ package de.paul2708.worm.columns.properties;
 import de.paul2708.worm.columns.AttributeResolver;
 import de.paul2708.worm.columns.ColumnAttribute;
 
-public class ForeignKeyProperty implements ColumnProperty {
+public class ReferenceProperty implements ColumnProperty {
 
-    private final Class<?> foreignKey;
+    private final Class<?> reference;
 
     private final AttributeResolver resolver;
 
-    public ForeignKeyProperty(Class<?> foreignKey) {
-        this.foreignKey = foreignKey;
+    public ReferenceProperty(Class<?> reference) {
+        this.reference = reference;
 
-        this.resolver = new AttributeResolver(foreignKey);
+        this.resolver = new AttributeResolver(reference);
     }
 
-    public Class<?> getForeignKey() {
-        return foreignKey;
+    public Class<?> getReference() {
+        return reference;
     }
 
     public String getForeignTable() {
