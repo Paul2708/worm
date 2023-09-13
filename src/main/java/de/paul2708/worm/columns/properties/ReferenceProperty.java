@@ -19,8 +19,8 @@ public class ReferenceProperty implements ColumnProperty {
         return reference;
     }
 
-    public String getForeignTable() {
-        return resolver.getTable();
+    public String getReferenceEntity() {
+        return resolver.getEntity();
     }
 
     public ColumnAttribute getForeignIdentifier() {

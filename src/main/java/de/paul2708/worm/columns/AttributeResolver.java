@@ -18,8 +18,8 @@ public class AttributeResolver {
         this.clazz = clazz;
     }
 
-    public String getTable() {
-        return clazz.getAnnotation(Table.class).value();
+    public String getEntity() {
+        return clazz.getAnnotation(Entity.class).value();
     }
 
     public List<ColumnAttribute> getColumns() {
@@ -58,17 +58,17 @@ public class AttributeResolver {
                 .toList();
     }
 
-    public String getFormattedTableNames() {
-        String tables = getTable();
+    public String getFormattedEntityNames() {
+        String entities = getEntity();
 
         if (!getReferences().isEmpty()) {
-            tables += ", ";
-            tables += getReferences().stream()
-                    .map(column -> column.getProperty(ReferenceProperty.class).getForeignTable())
+            entities += ", ";
+            entities += getReferences().stream()
+                    .map(column -> column.getProperty(ReferenceProperty.class).getReferenceEntity())
                     .collect(Collectors.joining(", "));
         }
 
-        return tables;
+        return entities;
     }
 
     private ColumnAttribute mapFieldToColumnAttribute(Field field) {

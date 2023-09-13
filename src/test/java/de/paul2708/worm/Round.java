@@ -5,7 +5,7 @@ import de.paul2708.worm.columns.generator.IntegerGenerator;
 
 import java.time.LocalDateTime;
 
-@Table("rounds")
+@Entity("rounds")
 public class Round {
 
     @Identifier

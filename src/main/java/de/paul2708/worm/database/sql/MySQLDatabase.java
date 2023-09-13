@@ -74,7 +74,7 @@ public class MySQLDatabase implements Database {
 
         String foreignKeyReferences = resolver.getReferences().stream()
                 .map(column -> {
-                    String table = column.getProperty(ReferenceProperty.class).getForeignTable();
+                    String table = column.getProperty(ReferenceProperty.class).getReferenceEntity();
                     String primaryKey = column.getProperty(ReferenceProperty.class).getForeignIdentifier().columnName();
 
                     return "FOREIGN KEY (%s) REFERENCES %s(%s)"
@@ -83,7 +83,7 @@ public class MySQLDatabase implements Database {
                 .collect(Collectors.joining(", "));
 
         String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s)"
-                .formatted(resolver.getTable(), sqlColumns, resolver.getIdentifier().columnName());
+                .formatted(resolver.getEntity(), sqlColumns, resolver.getIdentifier().columnName());
 
         if (!resolver.getReferences().isEmpty()) {
             query += ", %s".formatted(foreignKeyReferences) + ")";
@@ -124,7 +124,7 @@ public class MySQLDatabase implements Database {
             }
         }
 
-        String query = "INSERT INTO %s (%s) VALUES (%s)".formatted(resolver.getTable(), sqlColumns, sqlValues);
+        String query = "INSERT INTO %s (%s) VALUES (%s)".formatted(resolver.getEntity(), sqlColumns, sqlValues);
 
         int actualColumns = (int) resolver.getColumns().stream()
                 .filter(columnAttribute -> !columnAttribute.isCollection())
@@ -162,7 +162,7 @@ public class MySQLDatabase implements Database {
         if (!timestampColumns.isEmpty()) {
             String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
                     .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
-                            resolver.getTable(),
+                            resolver.getEntity(),
                             resolver.getIdentifier().columnName());
 
             context.query(timestampQuery, statement -> {
@@ -197,7 +197,7 @@ public class MySQLDatabase implements Database {
     public Collection<Object> findAll(AttributeResolver resolver) {
         // Build query
         String query = "SELECT * FROM %s%s"
-                .formatted(resolver.getFormattedTableNames(),
+                .formatted(resolver.getFormattedEntityNames(),
                         resolver.getReferences().isEmpty() ? "" : " WHERE " + buildConditions(resolver));
 
         // Query database
@@ -217,7 +217,7 @@ public class MySQLDatabase implements Database {
     public Optional<Object> findById(AttributeResolver resolver, Object key) {
         // Build query
         String query = "SELECT * FROM %s WHERE %s = ?%s"
-                .formatted(resolver.getFormattedTableNames(),
+                .formatted(resolver.getFormattedEntityNames(),
                         resolver.getIdentifier().getFullColumnName(),
                         resolver.getReferences().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
@@ -250,7 +250,7 @@ public class MySQLDatabase implements Database {
         }
         String conditions = String.join(" AND ", conditionArguments);
 
-        String query = "SELECT * FROM %s WHERE %s".formatted(resolver.getFormattedTableNames(), conditions);
+        String query = "SELECT * FROM %s WHERE %s".formatted(resolver.getFormattedEntityNames(), conditions);
 
         // Query database
         return context.query(query, statement -> {
@@ -281,7 +281,7 @@ public class MySQLDatabase implements Database {
                 });
 
         String query = "DELETE FROM %s WHERE %s = ?"
-                .formatted(resolver.getTable(), resolver.getIdentifier().columnName());
+                .formatted(resolver.getEntity(), resolver.getIdentifier().columnName());
 
         context.query(query, statement -> {
             mapper.setParameterValue(resolver.getIdentifier(), entity, statement, 1);

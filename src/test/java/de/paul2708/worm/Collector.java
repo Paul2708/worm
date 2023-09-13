@@ -3,14 +3,14 @@ package de.paul2708.worm;
 import de.paul2708.worm.columns.Column;
 import de.paul2708.worm.columns.MaxLength;
 import de.paul2708.worm.columns.Identifier;
-import de.paul2708.worm.columns.Table;
+import de.paul2708.worm.columns.Entity;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Table("collectors")
+@Entity("collectors")
 public class Collector {
 
     @Identifier

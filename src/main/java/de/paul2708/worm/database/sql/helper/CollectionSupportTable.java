@@ -28,7 +28,7 @@ public class CollectionSupportTable {
         this.entityResolver = entityResolver;
         this.collectionAttribute = collectionAttribute;
 
-        this.tableName = entityResolver.getTable() + "_" + collectionAttribute.columnName();
+        this.tableName = entityResolver.getEntity() + "_" + collectionAttribute.columnName();
 
         this.mapper = mapper;
         this.context = context;
@@ -49,7 +49,7 @@ public class CollectionSupportTable {
                 + "PRIMARY KEY (id), "
                 + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
                 .formatted(tableName, mapper.toSqlType(entityResolver.getIdentifier()), collectionColumns,
-                        entityResolver.getTable(), entityResolver.getIdentifier().columnName());
+                        entityResolver.getEntity(), entityResolver.getIdentifier().columnName());
 
         context.query(query);
     }

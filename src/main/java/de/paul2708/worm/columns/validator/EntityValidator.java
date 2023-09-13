@@ -2,7 +2,7 @@ package de.paul2708.worm.columns.validator;
 
 import de.paul2708.worm.columns.Column;
 import de.paul2708.worm.columns.Identifier;
-import de.paul2708.worm.columns.Table;
+import de.paul2708.worm.columns.Entity;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -18,7 +18,7 @@ public final class EntityValidator {
     public static void validate(Class<?> clazz) {
         validateIdentifier(clazz);
         validateEmptyConstructor(clazz);
-        validateTable(clazz);
+        validateEntity(clazz);
         validateNonFinalFields(clazz);
     }
 
@@ -49,9 +49,9 @@ public final class EntityValidator {
         }
     }
 
-    private static void validateTable(Class<?> clazz) {
-        if (!clazz.isAnnotationPresent(Table.class)) {
-            throw new InvalidEntityException(("Class %s must have the annotation @Table").formatted(clazz.getName()));
+    private static void validateEntity(Class<?> clazz) {
+        if (!clazz.isAnnotationPresent(Entity.class)) {
+            throw new InvalidEntityException(("Class %s must have the annotation @Entity").formatted(clazz.getName()));
         }
     }
 

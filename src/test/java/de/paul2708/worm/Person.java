@@ -5,7 +5,7 @@ import de.paul2708.worm.columns.generator.IntegerGenerator;
 
 import java.util.Objects;
 
-@Table("persons")
+@Entity("persons")
 public class Person {
 
     @Column("id")

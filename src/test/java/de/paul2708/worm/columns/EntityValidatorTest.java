@@ -25,9 +25,9 @@ public class EntityValidatorTest {
     }
 
     @Test
-    void testMissingTable() {
+    void testMissingEntity() {
         assertThrows(InvalidEntityException.class, () -> {
-            EntityValidator.validate(MissingTableEntity.class);
+            EntityValidator.validate(MissingEntityEntity.class);
         });
     }
 
@@ -44,7 +44,7 @@ public class EntityValidatorTest {
         EntityValidator.validate(Car.class);
     }
 
-    @Table("entity")
+    @Entity("entity")
     private static class MissingIdentifierEntity {
 
         @Column("id")
@@ -55,7 +55,7 @@ public class EntityValidatorTest {
         }
     }
 
-    @Table("entity")
+    @Entity("entity")
     private static class FinalColumnEntity {
 
         @Column("id")
@@ -67,18 +67,18 @@ public class EntityValidatorTest {
         }
     }
 
-    private static class MissingTableEntity {
+    private static class MissingEntityEntity {
 
         @Column("id")
         @Identifier
         private int id;
 
-        public MissingTableEntity() {
+        public MissingEntityEntity() {
 
         }
     }
 
-    @Table("entity")
+    @Entity("entity")
     private static class MissingEmptyConstructorEntity {
 
         @Column("id")

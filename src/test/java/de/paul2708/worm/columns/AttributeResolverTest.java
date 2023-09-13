@@ -18,8 +18,8 @@ public class AttributeResolverTest {
     }
 
     @Test
-    void testTableName() {
-        assertEquals("persons", resolver.getTable());
+    void testEntityName() {
+        assertEquals("persons", resolver.getEntity());
     }
 
     @Test
@@ -50,12 +50,12 @@ public class AttributeResolverTest {
     }
 
     @Test
-    void testFormattedTableName() {
-        assertEquals("persons", resolver.getFormattedTableNames());
+    void testFormattedEntityName() {
+        assertEquals("persons", resolver.getFormattedEntityNames());
     }
 
     @Test
-    void testFormattedTableNames() {
-        assertEquals("fleets, persons", new AttributeResolver(Fleet.class).getFormattedTableNames());
+    void testFormattedEntityNames() {
+        assertEquals("fleets, persons", new AttributeResolver(Fleet.class).getFormattedEntityNames());
     }
 }

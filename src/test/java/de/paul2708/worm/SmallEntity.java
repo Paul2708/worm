@@ -3,9 +3,9 @@ package de.paul2708.worm;
 import de.paul2708.worm.columns.Column;
 import de.paul2708.worm.columns.MaxLength;
 import de.paul2708.worm.columns.Identifier;
-import de.paul2708.worm.columns.Table;
+import de.paul2708.worm.columns.Entity;
 
-@Table("small_entities")
+@Entity("small_entities")
 public class SmallEntity {
 
     @Identifier

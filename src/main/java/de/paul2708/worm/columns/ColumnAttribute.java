@@ -47,7 +47,7 @@ public class ColumnAttribute implements Comparable<ColumnAttribute> {
     }
 
     public String getFullColumnName() {
-        return "%s.%s".formatted(new AttributeResolver(entityClass).getTable(), columnName);
+        return "%s.%s".formatted(new AttributeResolver(entityClass).getEntity(), columnName);
     }
 
     public String getTransformedColumnName() {

@@ -5,7 +5,7 @@ import de.paul2708.worm.columns.generator.UUIDGenerator;
 
 import java.util.UUID;
 
-@Table("fleets")
+@Entity("fleets")
 public class Fleet {
 
     @Identifier

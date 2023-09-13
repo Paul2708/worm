@@ -42,7 +42,7 @@ public class DatabaseActionProcessorTest {
         return processor.process(new SaveAction(new MethodInformation(null, new Object[]{entity})));
     }
 
-    @Table("strings")
+    @Entity("strings")
     public static final class StringEntity {
 
         @Column("limited_text")
