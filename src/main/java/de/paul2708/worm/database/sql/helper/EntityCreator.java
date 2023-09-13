@@ -1,7 +1,7 @@
 package de.paul2708.worm.database.sql.helper;
 
-import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeResolver;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
 
@@ -17,20 +17,20 @@ public final class EntityCreator {
         Map<String, Object> foreignFields = new HashMap<>();
 
         // Create foreign key objects
-        for (ColumnAttribute foreignKey : resolver.getReferences()) {
+        for (AttributeInformation foreignKey : resolver.getReferences()) {
             foreignFields.put(foreignKey.fieldName(), fromColumns(foreignKey.type(), resultSet, mapper, context));
         }
 
         Map<String, Object> fieldValues = new HashMap<>();
-        for (ColumnAttribute column : resolver.getColumns()) {
+        for (AttributeInformation column : resolver.getAttributes()) {
             if (column.isCollection()) {
                 continue;
             }
 
-            fieldValues.put(column.fieldName(), mapper.getValue(resultSet, column, column.getFullColumnName(), column.type()));
+            fieldValues.put(column.fieldName(), mapper.getValue(resultSet, column, column.getFullAttributeName(), column.type()));
         }
 
-        for (ColumnAttribute column : resolver.getColumns()) {
+        for (AttributeInformation column : resolver.getAttributes()) {
             if (!column.isCollection()) {
                 continue;
             }

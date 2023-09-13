@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql.collections;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.context.SQLFunction;
 import de.paul2708.worm.util.Reflections;
@@ -10,7 +10,7 @@ import java.util.*;
 public class MapProvider implements CollectionProvider {
 
     @Override
-    public SortedMap<String, String> getTableCreationColumns(ColumnAttribute collectionAttribute, ColumnMapper mapper) {
+    public SortedMap<String, String> getTableCreationColumns(AttributeInformation collectionAttribute, ColumnMapper mapper) {
         List<Class<?>> elementTypes = Reflections.getElementTypes(collectionAttribute.getField());
         Class<?> keyClass = elementTypes.get(0);
         Class<?> valueClass = elementTypes.get(1);
@@ -24,13 +24,13 @@ public class MapProvider implements CollectionProvider {
     }
 
     @Override
-    public int size(Object entity, ColumnAttribute columnAttribute) {
-        return ((Map<?, ?>) columnAttribute.getValue(entity)).size();
+    public int size(Object entity, AttributeInformation attributeInformation) {
+        return ((Map<?, ?>) attributeInformation.getValue(entity)).size();
     }
 
     @Override
-    public List<List<Object>> getSqlValues(Object entity, ColumnAttribute columnAttribute) {
-        Map<Object, Object> map = (Map<Object, Object>) columnAttribute.getValue(entity);
+    public List<List<Object>> getSqlValues(Object entity, AttributeInformation attributeInformation) {
+        Map<Object, Object> map = (Map<Object, Object>) attributeInformation.getValue(entity);
 
         List<List<Object>> values = new ArrayList<>();
 
@@ -42,11 +42,11 @@ public class MapProvider implements CollectionProvider {
     }
 
     @Override
-    public SQLFunction<Object> getValueFromResultSet(ColumnAttribute columnAttribute, ColumnMapper mapper) {
+    public SQLFunction<Object> getValueFromResultSet(AttributeInformation attributeInformation, ColumnMapper mapper) {
         return resultSet -> {
             Map<Object, Object> map = new HashMap<>();
 
-            List<Class<?>> elementTypes = Reflections.getElementTypes(columnAttribute.getField());
+            List<Class<?>> elementTypes = Reflections.getElementTypes(attributeInformation.getField());
             Class<?> keyClass = elementTypes.get(0);
             Class<?> valueClass = elementTypes.get(1);
 

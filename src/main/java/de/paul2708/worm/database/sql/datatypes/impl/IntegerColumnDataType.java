@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql.datatypes.impl;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 
 import java.sql.PreparedStatement;
@@ -15,17 +15,17 @@ public final class IntegerColumnDataType implements ColumnDataType<Integer> {
     }
 
     @Override
-    public Integer from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
+    public Integer from(ResultSet resultSet, AttributeInformation attribute, String column) throws SQLException {
         return resultSet.getInt(column);
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, Integer value) throws SQLException {
+    public void to(PreparedStatement statement, int index, AttributeInformation attribute, Integer value) throws SQLException {
         statement.setInt(index, value);
     }
 
     @Override
-    public String getSqlType(ColumnAttribute attribute) {
+    public String getSqlType(AttributeInformation attribute) {
         return "INT";
     }
 }

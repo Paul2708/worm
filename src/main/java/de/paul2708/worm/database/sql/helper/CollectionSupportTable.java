@@ -1,7 +1,7 @@
 package de.paul2708.worm.database.sql.helper;
 
-import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeResolver;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.collections.CollectionProvider;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
@@ -14,7 +14,7 @@ import java.util.stream.IntStream;
 public class CollectionSupportTable {
 
     private final AttributeResolver entityResolver;
-    private final ColumnAttribute collectionAttribute;
+    private final AttributeInformation collectionAttribute;
 
     private final String tableName;
 
@@ -23,12 +23,12 @@ public class CollectionSupportTable {
 
     private final CollectionProvider collectionProvider;
 
-    public CollectionSupportTable(AttributeResolver entityResolver, ColumnAttribute collectionAttribute,
+    public CollectionSupportTable(AttributeResolver entityResolver, AttributeInformation collectionAttribute,
                                   ColumnMapper mapper, ConnectionContext context) {
         this.entityResolver = entityResolver;
         this.collectionAttribute = collectionAttribute;
 
-        this.tableName = entityResolver.getEntity() + "_" + collectionAttribute.columnName();
+        this.tableName = entityResolver.getEntity() + "_" + collectionAttribute.attributeName();
 
         this.mapper = mapper;
         this.context = context;
@@ -49,7 +49,7 @@ public class CollectionSupportTable {
                 + "PRIMARY KEY (id), "
                 + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
                 .formatted(tableName, mapper.toSqlType(entityResolver.getIdentifier()), collectionColumns,
-                        entityResolver.getEntity(), entityResolver.getIdentifier().columnName());
+                        entityResolver.getEntity(), entityResolver.getIdentifier().attributeName());
 
         context.query(query);
     }

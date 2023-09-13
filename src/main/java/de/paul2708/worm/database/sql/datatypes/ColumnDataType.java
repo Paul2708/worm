@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql.datatypes;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -10,12 +10,12 @@ public interface ColumnDataType<T> {
 
     boolean matches(Class<?> clazz);
 
-    T from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException;
+    T from(ResultSet resultSet, AttributeInformation attribute, String column) throws SQLException;
 
-    void to(PreparedStatement statement, int index, ColumnAttribute attribute, T value) throws SQLException;
+    void to(PreparedStatement statement, int index, AttributeInformation attribute, T value) throws SQLException;
 
     @Deprecated
-    default void unsafeTo(PreparedStatement statement, int index, ColumnAttribute attribute, Object value) throws SQLException {
+    default void unsafeTo(PreparedStatement statement, int index, AttributeInformation attribute, Object value) throws SQLException {
         //noinspection unchecked
         to(statement, index, attribute, (T) value);
     }
@@ -26,5 +26,5 @@ public interface ColumnDataType<T> {
      * @param attribute column attribute
      * @return sql type
      */
-    String getSqlType(ColumnAttribute attribute);
+    String getSqlType(AttributeInformation attribute);
 }

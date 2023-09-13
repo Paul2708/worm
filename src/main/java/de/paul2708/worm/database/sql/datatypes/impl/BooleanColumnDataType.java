@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql.datatypes.impl;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 
 import java.sql.PreparedStatement;
@@ -15,17 +15,17 @@ public final class BooleanColumnDataType implements ColumnDataType<Boolean> {
     }
 
     @Override
-    public Boolean from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
+    public Boolean from(ResultSet resultSet, AttributeInformation attribute, String column) throws SQLException {
         return resultSet.getBoolean(column);
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, Boolean value) throws SQLException {
+    public void to(PreparedStatement statement, int index, AttributeInformation attribute, Boolean value) throws SQLException {
         statement.setBoolean(index, value);
     }
 
     @Override
-    public String getSqlType(ColumnAttribute attribute) {
+    public String getSqlType(AttributeInformation attribute) {
         return "BOOLEAN";
     }
 }

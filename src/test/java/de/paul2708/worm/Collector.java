@@ -1,9 +1,9 @@
 package de.paul2708.worm;
 
-import de.paul2708.worm.columns.Column;
-import de.paul2708.worm.columns.MaxLength;
-import de.paul2708.worm.columns.Identifier;
-import de.paul2708.worm.columns.Entity;
+import de.paul2708.worm.attributes.Attribute;
+import de.paul2708.worm.attributes.MaxLength;
+import de.paul2708.worm.attributes.Identifier;
+import de.paul2708.worm.attributes.Entity;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,16 +15,16 @@ public class Collector {
 
     @Identifier
     @MaxLength(255)
-    @Column("name")
+    @Attribute("name")
     private String name;
 
-    @Column("age")
+    @Attribute("age")
     private int age;
 
-    @Column("badges")
+    @Attribute("badges")
     private Set<String> badges;
 
-    @Column("primes")
+    @Attribute("primes")
     private List<Integer> primeNumbers;
 
     public Collector() {

@@ -2,11 +2,11 @@ package de.paul2708.worm.database.sql;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.CreatedAt;
-import de.paul2708.worm.columns.UpdatedAt;
-import de.paul2708.worm.columns.properties.ReferenceProperty;
+import de.paul2708.worm.attributes.AttributeResolver;
+import de.paul2708.worm.attributes.AttributeInformation;
+import de.paul2708.worm.attributes.CreatedAt;
+import de.paul2708.worm.attributes.UpdatedAt;
+import de.paul2708.worm.attributes.properties.ReferenceProperty;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
 import de.paul2708.worm.database.sql.context.SQLFunction;
@@ -67,23 +67,23 @@ public class MySQLDatabase implements Database {
     @Override
     public void prepare(AttributeResolver resolver) {
         // Create entity table
-        String sqlColumns = resolver.getColumns().stream()
+        String sqlColumns = resolver.getAttributes().stream()
                 .filter(column -> !column.isCollection())
-                .map(column -> "%s %s".formatted(column.columnName(), mapper.toSqlType(column)))
+                .map(column -> "%s %s".formatted(column.attributeName(), mapper.toSqlType(column)))
                 .collect(Collectors.joining(", "));
 
         String foreignKeyReferences = resolver.getReferences().stream()
                 .map(column -> {
                     String table = column.getProperty(ReferenceProperty.class).getReferenceEntity();
-                    String primaryKey = column.getProperty(ReferenceProperty.class).getForeignIdentifier().columnName();
+                    String primaryKey = column.getProperty(ReferenceProperty.class).getForeignIdentifier().attributeName();
 
                     return "FOREIGN KEY (%s) REFERENCES %s(%s)"
-                            .formatted(column.columnName(), table, primaryKey);
+                            .formatted(column.attributeName(), table, primaryKey);
                 })
                 .collect(Collectors.joining(", "));
 
         String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s)"
-                .formatted(resolver.getEntity(), sqlColumns, resolver.getIdentifier().columnName());
+                .formatted(resolver.getEntity(), sqlColumns, resolver.getIdentifier().attributeName());
 
         if (!resolver.getReferences().isEmpty()) {
             query += ", %s".formatted(foreignKeyReferences) + ")";
@@ -94,7 +94,7 @@ public class MySQLDatabase implements Database {
         context.query(query);
 
         // Create collection tables
-        for (ColumnAttribute column : resolver.getColumns()) {
+        for (AttributeInformation column : resolver.getAttributes()) {
             if (column.isCollection()) {
                 new CollectionSupportTable(resolver, column, mapper, context).create();
             }
@@ -104,29 +104,29 @@ public class MySQLDatabase implements Database {
     @Override
     public Object save(AttributeResolver resolver, Object entity) {
         // Save entity attributes
-        String sqlColumns = resolver.getColumns().stream()
+        String sqlColumns = resolver.getAttributes().stream()
                 .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class) && !column.isCollection())
-                .map(ColumnAttribute::columnName)
+                .map(AttributeInformation::attributeName)
                 .collect(Collectors.joining(", "));
-        String sqlValues = resolver.getColumns().stream()
+        String sqlValues = resolver.getAttributes().stream()
                 .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class)  && !column.isCollection())
                 .map(column -> "?")
                 .collect(Collectors.joining(", "));
-        String sqlUpdate = resolver.getColumnsWithoutIdentifier().stream()
+        String sqlUpdate = resolver.getAttributesWithoutIdentifier().stream()
                 .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class)  && !column.isCollection())
-                .map(ColumnAttribute::columnName)
+                .map(AttributeInformation::attributeName)
                 .map("%s = ?"::formatted)
                 .collect(Collectors.joining(", "));
 
-        for (ColumnAttribute column : resolver.getColumns()) {
+        for (AttributeInformation column : resolver.getAttributes()) {
             if (column.hasAnnotation(UpdatedAt.class)) {
-                sqlUpdate += ", " + column.columnName() + " = CURRENT_TIMESTAMP(6)";
+                sqlUpdate += ", " + column.attributeName() + " = CURRENT_TIMESTAMP(6)";
             }
         }
 
         String query = "INSERT INTO %s (%s) VALUES (%s)".formatted(resolver.getEntity(), sqlColumns, sqlValues);
 
-        int actualColumns = (int) resolver.getColumns().stream()
+        int actualColumns = (int) resolver.getAttributes().stream()
                 .filter(columnAttribute -> !columnAttribute.isCollection())
                 .count();
         if (actualColumns != 1) {
@@ -135,7 +135,7 @@ public class MySQLDatabase implements Database {
 
         context.query(query, statement -> {
             int index = 1;
-            for (ColumnAttribute column : resolver.getColumns()) {
+            for (AttributeInformation column : resolver.getAttributes()) {
                 if (column.isAutoTimestamp() || column.isCollection()) {
                     continue;
                 }
@@ -143,7 +143,7 @@ public class MySQLDatabase implements Database {
                 mapper.setParameterValue(column, entity, statement, index);
                 index++;
             }
-            for (ColumnAttribute column : resolver.getColumnsWithoutIdentifier()) {
+            for (AttributeInformation column : resolver.getAttributesWithoutIdentifier()) {
                 if (column.isAutoTimestamp() || column.isCollection()) {
                     continue;
                 }
@@ -154,22 +154,22 @@ public class MySQLDatabase implements Database {
         });
 
         // Fetch default column values
-        List<ColumnAttribute> timestampColumns = resolver.getColumns().stream()
-                .filter(ColumnAttribute::isAutoTimestamp)
+        List<AttributeInformation> timestampColumns = resolver.getAttributes().stream()
+                .filter(AttributeInformation::isAutoTimestamp)
                 .sorted()
                 .toList();
 
         if (!timestampColumns.isEmpty()) {
             String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
-                    .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
+                    .formatted(timestampColumns.stream().map(AttributeInformation::attributeName).collect(Collectors.joining(", ")),
                             resolver.getEntity(),
-                            resolver.getIdentifier().columnName());
+                            resolver.getIdentifier().attributeName());
 
             context.query(timestampQuery, statement -> {
                 mapper.setParameterValue(resolver.getIdentifier(), entity, statement, 1);
             }, resultSet -> {
                 if (resultSet.next()) {
-                    for (ColumnAttribute column : timestampColumns) {
+                    for (AttributeInformation column : timestampColumns) {
                         Object timestamp = mapper.getValue(resultSet, column);
                         column.setValue(entity, timestamp);
                     }
@@ -178,7 +178,7 @@ public class MySQLDatabase implements Database {
         }
 
         // Save collections
-        for (ColumnAttribute column : resolver.getColumns()) {
+        for (AttributeInformation column : resolver.getAttributes()) {
             if (!column.isCollection()) {
                 continue;
             }
@@ -218,7 +218,7 @@ public class MySQLDatabase implements Database {
         // Build query
         String query = "SELECT * FROM %s WHERE %s = ?%s"
                 .formatted(resolver.getFormattedEntityNames(),
-                        resolver.getIdentifier().getFullColumnName(),
+                        resolver.getIdentifier().getFullAttributeName(),
                         resolver.getReferences().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
         // Query database
@@ -237,16 +237,16 @@ public class MySQLDatabase implements Database {
     }
 
     @Override
-    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<ColumnAttribute, Object> attributes) {
+    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<AttributeInformation, Object> attributes) {
         // Build query
-        List<ColumnAttribute> columnAttributes = new ArrayList<>();
+        List<AttributeInformation> attributeInformations = new ArrayList<>();
         List<String> conditionArguments = new ArrayList<>();
 
-        for (Map.Entry<ColumnAttribute, Object> entry : attributes.entrySet()) {
-            ColumnAttribute column = entry.getKey();
-            conditionArguments.add("%s = ?".formatted(column.columnName()));
+        for (Map.Entry<AttributeInformation, Object> entry : attributes.entrySet()) {
+            AttributeInformation column = entry.getKey();
+            conditionArguments.add("%s = ?".formatted(column.attributeName()));
 
-            columnAttributes.add(column);
+            attributeInformations.add(column);
         }
         String conditions = String.join(" AND ", conditionArguments);
 
@@ -255,7 +255,7 @@ public class MySQLDatabase implements Database {
         // Query database
         return context.query(query, statement -> {
             int index = 1;
-            for (ColumnAttribute column : columnAttributes) {
+            for (AttributeInformation column : attributeInformations) {
                 mapper.setDirectParameterValue(column, attributes.get(column), statement, index);
                 index++;
             }
@@ -273,15 +273,15 @@ public class MySQLDatabase implements Database {
 
     @Override
     public void delete(AttributeResolver resolver, Object entity) {
-        resolver.getColumns().stream()
-                .filter(ColumnAttribute::isCollection)
+        resolver.getAttributes().stream()
+                .filter(AttributeInformation::isCollection)
                 .map(column -> new CollectionSupportTable(resolver, column, mapper, context))
                 .forEach(table -> {
                     table.deleteExistingElements(entity);
                 });
 
         String query = "DELETE FROM %s WHERE %s = ?"
-                .formatted(resolver.getEntity(), resolver.getIdentifier().columnName());
+                .formatted(resolver.getEntity(), resolver.getIdentifier().attributeName());
 
         context.query(query, statement -> {
             mapper.setParameterValue(resolver.getIdentifier(), entity, statement, 1);
@@ -292,8 +292,8 @@ public class MySQLDatabase implements Database {
         return resolver.getReferences().stream()
                 .map(column -> {
                     String fullColumnName = column.getProperty(ReferenceProperty.class).getForeignIdentifier()
-                            .getFullColumnName();
-                    return column.getFullColumnName() + " = " + fullColumnName;
+                            .getFullAttributeName();
+                    return column.getFullAttributeName() + " = " + fullColumnName;
                 })
                 .collect(Collectors.joining(" AND "));
     }

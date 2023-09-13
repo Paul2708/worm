@@ -1,9 +1,9 @@
 package de.paul2708.worm.database.memory;
 
-import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.CreatedAt;
-import de.paul2708.worm.columns.UpdatedAt;
+import de.paul2708.worm.attributes.AttributeResolver;
+import de.paul2708.worm.attributes.AttributeInformation;
+import de.paul2708.worm.attributes.CreatedAt;
+import de.paul2708.worm.attributes.UpdatedAt;
 import de.paul2708.worm.database.Database;
 
 import java.time.LocalDateTime;
@@ -33,10 +33,10 @@ public class InMemoryDatabase implements Database {
 
         Object identifier = resolver.getIdentifier().getValue(entity);
 
-        for (ColumnAttribute column : resolver.getColumns()) {
-            if (column.hasAnnotation(UpdatedAt.class)
-                    || column.hasAnnotation(CreatedAt.class) && !map.containsKey(identifier)) {
-                column.setValue(entity, LocalDateTime.now());
+        for (AttributeInformation attribute : resolver.getAttributes()) {
+            if (attribute.hasAnnotation(UpdatedAt.class)
+                    || attribute.hasAnnotation(CreatedAt.class) && !map.containsKey(identifier)) {
+                attribute.setValue(entity, LocalDateTime.now());
             }
         }
 
@@ -59,7 +59,7 @@ public class InMemoryDatabase implements Database {
     }
 
     @Override
-    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<ColumnAttribute, Object> attributes) {
+    public Collection<Object> findByAttributes(AttributeResolver resolver, Map<AttributeInformation, Object> attributes) {
         Map<Object, Object> map = database.getOrDefault(resolver.getTargetClass(), new HashMap<>());
         List<Object> result = new ArrayList<>();
 
@@ -93,12 +93,12 @@ public class InMemoryDatabase implements Database {
     }
 
     private boolean hasMatchingAttributes(AttributeResolver resolver, Object entity,
-                                          Map<ColumnAttribute, Object> attributes) {
-        for (ColumnAttribute column : resolver.getColumns()) {
-            if (attributes.containsKey(column)) {
-                Object actualValue = column.getValue(entity);
+                                          Map<AttributeInformation, Object> attributes) {
+        for (AttributeInformation attribute : resolver.getAttributes()) {
+            if (attributes.containsKey(attribute)) {
+                Object actualValue = attribute.getValue(entity);
 
-                if (!actualValue.equals(attributes.get(column))) {
+                if (!actualValue.equals(attributes.get(attribute))) {
                     return false;
                 }
             }

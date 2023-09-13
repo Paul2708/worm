@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql.datatypes.impl;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 
 import java.sql.PreparedStatement;
@@ -17,17 +17,17 @@ public final class EnumColumnDataType implements ColumnDataType<Enum<?>> {
     }
 
     @Override
-    public Enum<?> from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
+    public Enum<?> from(ResultSet resultSet, AttributeInformation attribute, String column) throws SQLException {
         return Enum.valueOf((Class<? extends Enum>) attribute.type(), resultSet.getString(column));
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, Enum<?> value) throws SQLException {
+    public void to(PreparedStatement statement, int index, AttributeInformation attribute, Enum<?> value) throws SQLException {
         statement.setString(index, value.name());
     }
 
     @Override
-    public String getSqlType(ColumnAttribute attribute) {
+    public String getSqlType(AttributeInformation attribute) {
         Object[] enumConstants = attribute.type().getEnumConstants();
 
         String enumValues = Arrays.stream(enumConstants)

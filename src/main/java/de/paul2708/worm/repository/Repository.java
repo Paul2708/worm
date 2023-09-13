@@ -1,11 +1,11 @@
 package de.paul2708.worm.repository;
 
-import de.paul2708.worm.columns.AttributeResolver;
+import de.paul2708.worm.attributes.AttributeResolver;
 import de.paul2708.worm.database.Database;
 
 import java.lang.reflect.Proxy;
 
-import static de.paul2708.worm.columns.validator.EntityValidator.validate;
+import static de.paul2708.worm.attributes.validator.EntityValidator.validate;
 
 public final class Repository {
 

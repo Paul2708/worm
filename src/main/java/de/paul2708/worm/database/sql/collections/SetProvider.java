@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql.collections;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.context.SQLFunction;
 import de.paul2708.worm.util.Reflections;
@@ -10,7 +10,7 @@ import java.util.*;
 public class SetProvider implements CollectionProvider {
 
     @Override
-    public SortedMap<String, String> getTableCreationColumns(ColumnAttribute collectionAttribute, ColumnMapper mapper) {
+    public SortedMap<String, String> getTableCreationColumns(AttributeInformation collectionAttribute, ColumnMapper mapper) {
         SortedMap<String, String> map = new TreeMap<>();
 
         map.put("`value`", mapper.toSqlType(Reflections.getElementType(collectionAttribute.getField())));
@@ -19,13 +19,13 @@ public class SetProvider implements CollectionProvider {
     }
 
     @Override
-    public int size(Object entity, ColumnAttribute columnAttribute) {
-        return ((Set<?>) columnAttribute.getValue(entity)).size();
+    public int size(Object entity, AttributeInformation attributeInformation) {
+        return ((Set<?>) attributeInformation.getValue(entity)).size();
     }
 
     @Override
-    public List<List<Object>> getSqlValues(Object entity, ColumnAttribute columnAttribute) {
-        Set<Object> set = (Set<Object>) columnAttribute.getValue(entity);
+    public List<List<Object>> getSqlValues(Object entity, AttributeInformation attributeInformation) {
+        Set<Object> set = (Set<Object>) attributeInformation.getValue(entity);
 
         List<List<Object>> values = new ArrayList<>();
 
@@ -37,12 +37,12 @@ public class SetProvider implements CollectionProvider {
     }
 
     @Override
-    public SQLFunction<Object> getValueFromResultSet(ColumnAttribute columnAttribute, ColumnMapper mapper) {
+    public SQLFunction<Object> getValueFromResultSet(AttributeInformation attributeInformation, ColumnMapper mapper) {
         return resultSet -> {
             Set<Object> set = new HashSet<>();
 
             while (resultSet.next()) {
-                Object value = mapper.getValue(resultSet, "value", Reflections.getElementType(columnAttribute.getField()));
+                Object value = mapper.getValue(resultSet, "value", Reflections.getElementType(attributeInformation.getField()));
                 set.add(value);
             }
 

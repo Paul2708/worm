@@ -1,7 +1,7 @@
 package de.paul2708.worm.database.sql.datatypes.impl;
 
-import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.properties.LengthRestrictedProperty;
+import de.paul2708.worm.attributes.AttributeInformation;
+import de.paul2708.worm.attributes.properties.LengthRestrictedProperty;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 
 import java.sql.PreparedStatement;
@@ -16,17 +16,17 @@ public final class StringColumnDataType implements ColumnDataType<String> {
     }
 
     @Override
-    public String from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
+    public String from(ResultSet resultSet, AttributeInformation attribute, String column) throws SQLException {
         return resultSet.getString(column);
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, String value) throws SQLException {
+    public void to(PreparedStatement statement, int index, AttributeInformation attribute, String value) throws SQLException {
         statement.setString(index, value);
     }
 
     @Override
-    public String getSqlType(ColumnAttribute attribute) {
+    public String getSqlType(AttributeInformation attribute) {
         if (attribute == null) {
             return "TEXT";
         }

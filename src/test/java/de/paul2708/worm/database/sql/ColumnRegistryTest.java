@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 import de.paul2708.worm.Person;
@@ -65,17 +65,17 @@ public class ColumnRegistryTest {
         }
 
         @Override
-        public Unregistered from(ResultSet resultSet, ColumnAttribute attribute, String column) {
+        public Unregistered from(ResultSet resultSet, AttributeInformation attribute, String column) {
             return null;
         }
 
         @Override
-        public void to(PreparedStatement statement, int index, ColumnAttribute attribute, Unregistered value) {
+        public void to(PreparedStatement statement, int index, AttributeInformation attribute, Unregistered value) {
 
         }
 
         @Override
-        public String getSqlType(ColumnAttribute attribute) {
+        public String getSqlType(AttributeInformation attribute) {
             return null;
         }
     }

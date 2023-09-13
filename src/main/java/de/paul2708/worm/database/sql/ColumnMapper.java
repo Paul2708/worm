@@ -1,7 +1,7 @@
 package de.paul2708.worm.database.sql;
 
-import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.properties.ReferenceProperty;
+import de.paul2708.worm.attributes.AttributeInformation;
+import de.paul2708.worm.attributes.properties.ReferenceProperty;
 import de.paul2708.worm.database.sql.datatypes.ColumnsRegistry;
 
 import java.sql.PreparedStatement;
@@ -16,9 +16,9 @@ public class ColumnMapper {
         this.registry = registry;
     }
 
-    public void setParameterValue(ColumnAttribute column, Object entity, PreparedStatement statement, int index) {
+    public void setParameterValue(AttributeInformation column, Object entity, PreparedStatement statement, int index) {
         if (column.isReference()) {
-            ColumnAttribute foreignPrimaryKey = column.getProperty(ReferenceProperty.class).getForeignIdentifier();
+            AttributeInformation foreignPrimaryKey = column.getProperty(ReferenceProperty.class).getForeignIdentifier();
             Object value = foreignPrimaryKey.getValue(column.getValue(entity));
 
             setValue(statement, value.getClass(), index, column, value);
@@ -27,7 +27,7 @@ public class ColumnMapper {
         }
     }
 
-    public void setDirectParameterValue(ColumnAttribute column, Object columnValue, PreparedStatement statement, int index) {
+    public void setDirectParameterValue(AttributeInformation column, Object columnValue, PreparedStatement statement, int index) {
         setValue(statement, column.type(), index, column, columnValue);
     }
 
@@ -39,7 +39,7 @@ public class ColumnMapper {
         }
     }
 
-    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, ColumnAttribute attribute, Object value) {
+    private void setValue(PreparedStatement statement, Class<?> expectedType, int index, AttributeInformation attribute, Object value) {
         try {
             registry.getDataType(expectedType).unsafeTo(statement, index, attribute, value);
         } catch (SQLException e) {
@@ -47,7 +47,7 @@ public class ColumnMapper {
         }
     }
 
-    public Object getValue(ResultSet resultSet, ColumnAttribute attribute, String column, Class<?> expectedType) {
+    public Object getValue(ResultSet resultSet, AttributeInformation attribute, String column, Class<?> expectedType) {
         try {
             return registry.getDataType(expectedType).from(resultSet, attribute, column);
         } catch (SQLException e) {
@@ -55,9 +55,9 @@ public class ColumnMapper {
         }
     }
 
-    public Object getValue(ResultSet resultSet, ColumnAttribute attribute) {
+    public Object getValue(ResultSet resultSet, AttributeInformation attribute) {
         try {
-            return registry.getDataType(attribute.type()).from(resultSet, attribute, attribute.columnName());
+            return registry.getDataType(attribute.type()).from(resultSet, attribute, attribute.attributeName());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -67,7 +67,7 @@ public class ColumnMapper {
         return this.getValue(resultSet, null, column, expectedType);
     }
 
-    public String toSqlType(ColumnAttribute column) {
+    public String toSqlType(AttributeInformation column) {
         Class<?> type = column.type();
 
         return registry.getDataType(type).getSqlType(column);

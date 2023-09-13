@@ -1,29 +1,28 @@
 package de.paul2708.worm.database.sql.collections;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.context.SQLFunction;
 import de.paul2708.worm.util.Reflections;
 
 import java.util.List;
 import java.util.SortedMap;
-import java.util.stream.LongStream;
 
 public interface CollectionProvider {
 
-    SortedMap<String, String> getTableCreationColumns(ColumnAttribute collectionAttribute, ColumnMapper mapper);
+    SortedMap<String, String> getTableCreationColumns(AttributeInformation collectionAttribute, ColumnMapper mapper);
 
-    default int numberOfParameters(ColumnAttribute columnAttribute, ColumnMapper mapper) {
-        return getTableCreationColumns(columnAttribute, mapper).keySet().size();
+    default int numberOfParameters(AttributeInformation attributeInformation, ColumnMapper mapper) {
+        return getTableCreationColumns(attributeInformation, mapper).keySet().size();
     }
 
-    int size(Object entity, ColumnAttribute columnAttribute);
+    int size(Object entity, AttributeInformation attributeInformation);
 
-    List<List<Object>> getSqlValues(Object entity, ColumnAttribute columnAttribute);
+    List<List<Object>> getSqlValues(Object entity, AttributeInformation attributeInformation);
 
-    SQLFunction<Object> getValueFromResultSet(ColumnAttribute columnAttribute, ColumnMapper mapper);
+    SQLFunction<Object> getValueFromResultSet(AttributeInformation attributeInformation, ColumnMapper mapper);
 
-    static CollectionProvider of(ColumnAttribute attribute) {
+    static CollectionProvider of(AttributeInformation attribute) {
         if (!attribute.isCollection()) {
             throw new IllegalArgumentException("Column attribute must be a collection.");
         }

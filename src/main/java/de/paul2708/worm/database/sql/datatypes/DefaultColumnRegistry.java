@@ -1,8 +1,8 @@
 package de.paul2708.worm.database.sql.datatypes;
 
 import de.paul2708.worm.database.sql.datatypes.impl.*;
-import de.paul2708.worm.columns.AttributeResolver;
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeResolver;
+import de.paul2708.worm.attributes.AttributeInformation;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -66,7 +66,7 @@ final class DefaultColumnRegistry implements ColumnsRegistry {
     }
 
     private ColumnDataType<?> getDataTypeFromPrimaryKey(Class<?> clazz) {
-        ColumnAttribute primaryKey = new AttributeResolver(clazz).getIdentifier();
+        AttributeInformation primaryKey = new AttributeResolver(clazz).getIdentifier();
         if (primaryKey == null) {
             return null;
         }
