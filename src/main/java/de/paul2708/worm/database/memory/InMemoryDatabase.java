@@ -31,16 +31,16 @@ public class InMemoryDatabase implements Database {
     public Object save(AttributeResolver resolver, Object entity) {
         Map<Object, Object> map = database.getOrDefault(resolver.getTargetClass(), new HashMap<>());
 
-        Object primaryKey = resolver.getPrimaryKey().getValue(entity);
+        Object identifier = resolver.getIdentifier().getValue(entity);
 
         for (ColumnAttribute column : resolver.getColumns()) {
             if (column.hasAnnotation(UpdatedAt.class)
-                    || column.hasAnnotation(CreatedAt.class) && !map.containsKey(primaryKey)) {
+                    || column.hasAnnotation(CreatedAt.class) && !map.containsKey(identifier)) {
                 column.setValue(entity, LocalDateTime.now());
             }
         }
 
-        map.put(resolver.getPrimaryKey().getValue(entity), entity);
+        map.put(resolver.getIdentifier().getValue(entity), entity);
         database.put(resolver.getTargetClass(), map);
 
         return entity;

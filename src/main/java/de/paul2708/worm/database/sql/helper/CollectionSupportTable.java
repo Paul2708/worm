@@ -5,7 +5,6 @@ import de.paul2708.worm.columns.ColumnAttribute;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.collections.CollectionProvider;
 import de.paul2708.worm.database.sql.context.ConnectionContext;
-import de.paul2708.worm.util.Reflections;
 
 import java.util.List;
 import java.util.SortedMap;
@@ -49,8 +48,8 @@ public class CollectionSupportTable {
                 + "%s, "
                 + "PRIMARY KEY (id), "
                 + "FOREIGN KEY (parent_id) REFERENCES %s(%s))")
-                .formatted(tableName, mapper.toSqlType(entityResolver.getPrimaryKey()), collectionColumns,
-                        entityResolver.getTable(), entityResolver.getPrimaryKey().columnName());
+                .formatted(tableName, mapper.toSqlType(entityResolver.getIdentifier()), collectionColumns,
+                        entityResolver.getTable(), entityResolver.getIdentifier().columnName());
 
         context.query(query);
     }
@@ -60,7 +59,7 @@ public class CollectionSupportTable {
                 .formatted(tableName, tableName);
 
         context.query(query, statement -> {
-            mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, 1);
+            mapper.setParameterValue(entityResolver.getIdentifier(), entity, statement, 1);
         });
     }
 
@@ -85,7 +84,7 @@ public class CollectionSupportTable {
             int index = 1;
 
             for (List<Object> sqlValues : collectionProvider.getSqlValues(entity, collectionAttribute)) {
-                mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, index);
+                mapper.setParameterValue(entityResolver.getIdentifier(), entity, statement, index);
                 index++;
 
                 for (Object sqlValue : sqlValues) {
@@ -100,7 +99,7 @@ public class CollectionSupportTable {
         String query = "SELECT * FROM " + tableName + " WHERE parent_id = ?";
 
         return context.query(query, statement -> {
-            mapper.setParameterValue(entityResolver.getPrimaryKey(), entity, statement, 1);
+            mapper.setParameterValue(entityResolver.getIdentifier(), entity, statement, 1);
         }, collectionProvider.getValueFromResultSet(collectionAttribute, mapper));
     }
 }

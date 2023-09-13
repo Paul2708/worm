@@ -23,7 +23,7 @@ public class ForeignKeyProperty implements ColumnProperty {
         return resolver.getTable();
     }
 
-    public ColumnAttribute getForeignPrimaryKey() {
-        return resolver.getPrimaryKey();
+    public ColumnAttribute getForeignIdentifier() {
+        return resolver.getIdentifier();
     }
 }

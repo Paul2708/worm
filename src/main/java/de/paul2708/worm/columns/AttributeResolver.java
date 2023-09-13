@@ -37,16 +37,16 @@ public class AttributeResolver {
         return columns;
     }
 
-    public ColumnAttribute getPrimaryKey() {
+    public ColumnAttribute getIdentifier() {
         return getColumns().stream()
-                .filter(ColumnAttribute::isPrimaryKey)
+                .filter(ColumnAttribute::isIdentifier)
                 .findAny()
                 .orElse(null);
     }
 
-    public List<ColumnAttribute> getColumnsWithoutPrimaryKey() {
+    public List<ColumnAttribute> getColumnsWithoutIdentifier() {
         return getColumns().stream()
-                .filter(column -> !column.isPrimaryKey())
+                .filter(column -> !column.isIdentifier())
                 .sorted()
                 .toList();
     }
@@ -81,8 +81,8 @@ public class AttributeResolver {
         ColumnAttribute attribute = new ColumnAttribute(columnName, field.getName(), field.getType(), clazz);
 
         // Map annotations to column properties
-        if (field.isAnnotationPresent(PrimaryKey.class)) {
-            attribute.addProperty(new PrimaryKeyProperty());
+        if (field.isAnnotationPresent(Identifier.class)) {
+            attribute.addProperty(new IdentifierProperty());
         }
         if (field.isAnnotationPresent(MaxLength.class)) {
             attribute.addProperty(new LengthRestrictedProperty(field.getAnnotation(MaxLength.class).value()));

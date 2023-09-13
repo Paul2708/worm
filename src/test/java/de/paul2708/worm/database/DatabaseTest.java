@@ -632,7 +632,7 @@ public abstract class DatabaseTest {
     }
 
     @Test
-    void testOnlyPrimaryKey() {
+    void testOnlyIdentifier() {
         SmallEntity entity = new SmallEntity("Sam");
         smallEntityRepository.save(entity);
 

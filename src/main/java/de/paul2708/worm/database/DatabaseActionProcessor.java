@@ -75,10 +75,10 @@ public class DatabaseActionProcessor {
         } else if (action instanceof DeleteAction) {
             Object targetEntity = action.getMethodInformation().args()[0];
 
-            Object key = getField(resolver.getPrimaryKey().fieldName(), targetEntity);
+            Object key = getField(resolver.getIdentifier().fieldName(), targetEntity);
 
             if (key == null) {
-                throw new IllegalArgumentException("Cannot access primary key");
+                throw new IllegalArgumentException("Cannot access identifier");
             }
 
             database.delete(resolver, targetEntity);

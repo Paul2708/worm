@@ -66,7 +66,7 @@ final class DefaultColumnRegistry implements ColumnsRegistry {
     }
 
     private ColumnDataType<?> getDataTypeFromPrimaryKey(Class<?> clazz) {
-        ColumnAttribute primaryKey = new AttributeResolver(clazz).getPrimaryKey();
+        ColumnAttribute primaryKey = new AttributeResolver(clazz).getIdentifier();
         if (primaryKey == null) {
             return null;
         }

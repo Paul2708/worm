@@ -11,9 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class EntityValidatorTest {
 
     @Test
-    void testMissingPrimaryKey() {
+    void testMissingIdentifier() {
         assertThrows(InvalidEntityException.class, () -> {
-            EntityValidator.validate(MissingPrimaryKeyEntity.class);
+            EntityValidator.validate(MissingIdentifierEntity.class);
         });
     }
 
@@ -45,12 +45,12 @@ public class EntityValidatorTest {
     }
 
     @Table("entity")
-    private static class MissingPrimaryKeyEntity {
+    private static class MissingIdentifierEntity {
 
         @Column("id")
         private int id;
 
-        public MissingPrimaryKeyEntity() {
+        public MissingIdentifierEntity() {
 
         }
     }
@@ -59,7 +59,7 @@ public class EntityValidatorTest {
     private static class FinalColumnEntity {
 
         @Column("id")
-        @PrimaryKey
+        @Identifier
         private final int id;
 
         public FinalColumnEntity() {
@@ -70,7 +70,7 @@ public class EntityValidatorTest {
     private static class MissingTableEntity {
 
         @Column("id")
-        @PrimaryKey
+        @Identifier
         private int id;
 
         public MissingTableEntity() {
@@ -82,7 +82,7 @@ public class EntityValidatorTest {
     private static class MissingEmptyConstructorEntity {
 
         @Column("id")
-        @PrimaryKey
+        @Identifier
         private int id;
 
         public MissingEmptyConstructorEntity(int id) {

@@ -33,14 +33,14 @@ public class AttributeResolverTest {
     }
 
     @Test
-    void testPrimaryKey() {
-        assertTrue(resolver.getPrimaryKey().isPrimaryKey());
-        assertEquals("id", resolver.getPrimaryKey().columnName());
+    void testIdentifier() {
+        assertTrue(resolver.getIdentifier().isIdentifier());
+        assertEquals("id", resolver.getIdentifier().columnName());
     }
 
     @Test
-    void testColumnsWithoutPrimaryKey() {
-        List<ColumnAttribute> columns = resolver.getColumnsWithoutPrimaryKey();
+    void testColumnsWithoutIdentifier() {
+        List<ColumnAttribute> columns = resolver.getColumnsWithoutIdentifier();
 
         assertEquals(3, columns.size());
 

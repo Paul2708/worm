@@ -1,7 +1,7 @@
 package de.paul2708.worm.columns.validator;
 
 import de.paul2708.worm.columns.Column;
-import de.paul2708.worm.columns.PrimaryKey;
+import de.paul2708.worm.columns.Identifier;
 import de.paul2708.worm.columns.Table;
 
 import java.lang.reflect.Field;
@@ -16,27 +16,27 @@ public final class EntityValidator {
 
     // TODO: Merge methods into one for loop over all fields
     public static void validate(Class<?> clazz) {
-        validatePrimaryKey(clazz);
+        validateIdentifier(clazz);
         validateEmptyConstructor(clazz);
         validateTable(clazz);
         validateNonFinalFields(clazz);
     }
 
-    private static void validatePrimaryKey(Class<?> clazz) {
+    private static void validateIdentifier(Class<?> clazz) {
         int count = 0;
-        boolean columnAndPrimaryKey = false;
+        boolean columnAndIdentifier = false;
         for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(PrimaryKey.class)) {
+            if (field.isAnnotationPresent(Identifier.class)) {
                 count++;
 
                 if (field.isAnnotationPresent(Column.class)) {
-                    columnAndPrimaryKey = true;
+                    columnAndIdentifier = true;
                 }
             }
         }
-        if (count != 1 || !columnAndPrimaryKey) {
-            throw new InvalidEntityException(("Class %s must have exactly one primary key, " +
-                    "i.e., a field with annotation @PrimaryKey.").formatted(clazz.getName()));
+        if (count != 1 || !columnAndIdentifier) {
+            throw new InvalidEntityException(("Class %s must have exactly one identifier, " +
+                    "i.e., a field with annotation @Identifier.").formatted(clazz.getName()));
         }
     }
 

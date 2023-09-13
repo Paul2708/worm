@@ -75,7 +75,7 @@ public class MySQLDatabase implements Database {
         String foreignKeyReferences = resolver.getForeignKeys().stream()
                 .map(column -> {
                     String table = column.getProperty(ForeignKeyProperty.class).getForeignTable();
-                    String primaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey().columnName();
+                    String primaryKey = column.getProperty(ForeignKeyProperty.class).getForeignIdentifier().columnName();
 
                     return "FOREIGN KEY (%s) REFERENCES %s(%s)"
                             .formatted(column.columnName(), table, primaryKey);
@@ -83,7 +83,7 @@ public class MySQLDatabase implements Database {
                 .collect(Collectors.joining(", "));
 
         String query = "CREATE TABLE IF NOT EXISTS %s (%s, PRIMARY KEY (%s)"
-                .formatted(resolver.getTable(), sqlColumns, resolver.getPrimaryKey().columnName());
+                .formatted(resolver.getTable(), sqlColumns, resolver.getIdentifier().columnName());
 
         if (!resolver.getForeignKeys().isEmpty()) {
             query += ", %s".formatted(foreignKeyReferences) + ")";
@@ -112,7 +112,7 @@ public class MySQLDatabase implements Database {
                 .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class)  && !column.isCollection())
                 .map(column -> "?")
                 .collect(Collectors.joining(", "));
-        String sqlUpdate = resolver.getColumnsWithoutPrimaryKey().stream()
+        String sqlUpdate = resolver.getColumnsWithoutIdentifier().stream()
                 .filter(column -> !column.hasAnnotation(CreatedAt.class) && !column.hasAnnotation(UpdatedAt.class)  && !column.isCollection())
                 .map(ColumnAttribute::columnName)
                 .map("%s = ?"::formatted)
@@ -143,7 +143,7 @@ public class MySQLDatabase implements Database {
                 mapper.setParameterValue(column, entity, statement, index);
                 index++;
             }
-            for (ColumnAttribute column : resolver.getColumnsWithoutPrimaryKey()) {
+            for (ColumnAttribute column : resolver.getColumnsWithoutIdentifier()) {
                 if (column.isAutoTimestamp() || column.isCollection()) {
                     continue;
                 }
@@ -163,10 +163,10 @@ public class MySQLDatabase implements Database {
             String timestampQuery = "SELECT %s FROM %s WHERE %s = ?"
                     .formatted(timestampColumns.stream().map(ColumnAttribute::columnName).collect(Collectors.joining(", ")),
                             resolver.getTable(),
-                            resolver.getPrimaryKey().columnName());
+                            resolver.getIdentifier().columnName());
 
             context.query(timestampQuery, statement -> {
-                mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
+                mapper.setParameterValue(resolver.getIdentifier(), entity, statement, 1);
             }, resultSet -> {
                 if (resultSet.next()) {
                     for (ColumnAttribute column : timestampColumns) {
@@ -218,12 +218,12 @@ public class MySQLDatabase implements Database {
         // Build query
         String query = "SELECT * FROM %s WHERE %s = ?%s"
                 .formatted(resolver.getFormattedTableNames(),
-                        resolver.getPrimaryKey().getFullColumnName(),
+                        resolver.getIdentifier().getFullColumnName(),
                         resolver.getForeignKeys().isEmpty() ? "" : " AND " + buildConditions(resolver));
 
         // Query database
         return context.query(query, statement -> {
-            mapper.setDirectParameterValue(resolver.getPrimaryKey(), key, statement, 1);
+            mapper.setDirectParameterValue(resolver.getIdentifier(), key, statement, 1);
         }, resultSet -> {
             // TODO: Handle multiple responses, throw error
             if (resultSet.next()) {
@@ -281,17 +281,17 @@ public class MySQLDatabase implements Database {
                 });
 
         String query = "DELETE FROM %s WHERE %s = ?"
-                .formatted(resolver.getTable(), resolver.getPrimaryKey().columnName());
+                .formatted(resolver.getTable(), resolver.getIdentifier().columnName());
 
         context.query(query, statement -> {
-            mapper.setParameterValue(resolver.getPrimaryKey(), entity, statement, 1);
+            mapper.setParameterValue(resolver.getIdentifier(), entity, statement, 1);
         });
     }
 
     private String buildConditions(AttributeResolver resolver) {
         return resolver.getForeignKeys().stream()
                 .map(column -> {
-                    String fullColumnName = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey()
+                    String fullColumnName = column.getProperty(ForeignKeyProperty.class).getForeignIdentifier()
                             .getFullColumnName();
                     return column.getFullColumnName() + " = " + fullColumnName;
                 })

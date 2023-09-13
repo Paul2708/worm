@@ -2,7 +2,6 @@ package de.paul2708.worm.database;
 
 import de.paul2708.worm.columns.*;
 import de.paul2708.worm.columns.generator.ValueGenerator;
-import de.paul2708.worm.database.DatabaseActionProcessor;
 import de.paul2708.worm.database.memory.InMemoryDatabase;
 import de.paul2708.worm.repository.actions.MethodInformation;
 import de.paul2708.worm.repository.actions.SaveAction;
@@ -47,7 +46,7 @@ public class DatabaseActionProcessorTest {
     public static final class StringEntity {
 
         @Column("limited_text")
-        @PrimaryKey
+        @Identifier
         @MaxLength(4)
         private String limitedText;
 

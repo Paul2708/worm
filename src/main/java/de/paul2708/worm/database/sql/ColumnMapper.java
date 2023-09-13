@@ -18,7 +18,7 @@ public class ColumnMapper {
 
     public void setParameterValue(ColumnAttribute column, Object entity, PreparedStatement statement, int index) {
         if (column.isForeignKey()) {
-            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignPrimaryKey();
+            ColumnAttribute foreignPrimaryKey = column.getProperty(ForeignKeyProperty.class).getForeignIdentifier();
             Object value = foreignPrimaryKey.getValue(column.getValue(entity));
 
             setValue(statement, value.getClass(), index, column, value);

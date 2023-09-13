@@ -2,7 +2,7 @@ package de.paul2708.worm;
 
 import de.paul2708.worm.columns.Column;
 import de.paul2708.worm.columns.MaxLength;
-import de.paul2708.worm.columns.PrimaryKey;
+import de.paul2708.worm.columns.Identifier;
 import de.paul2708.worm.columns.Table;
 
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ import java.util.Set;
 @Table("collectors")
 public class Collector {
 
-    @PrimaryKey
+    @Identifier
     @MaxLength(255)
     @Column("name")
     private String name;
