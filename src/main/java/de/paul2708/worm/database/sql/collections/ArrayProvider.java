@@ -1,6 +1,6 @@
 package de.paul2708.worm.database.sql.collections;
 
-import de.paul2708.worm.columns.ColumnAttribute;
+import de.paul2708.worm.attributes.AttributeInformation;
 import de.paul2708.worm.database.sql.ColumnMapper;
 import de.paul2708.worm.database.sql.context.SQLFunction;
 import de.paul2708.worm.util.Reflections;
@@ -14,7 +14,7 @@ import java.util.TreeMap;
 public class ArrayProvider implements CollectionProvider {
 
     @Override
-    public SortedMap<String, String> getTableCreationColumns(ColumnAttribute collectionAttribute, ColumnMapper mapper) {
+    public SortedMap<String, String> getTableCreationColumns(AttributeInformation collectionAttribute, ColumnMapper mapper) {
         SortedMap<String, String> map = new TreeMap<>();
 
         map.put("`index`", "INT");
@@ -24,13 +24,13 @@ public class ArrayProvider implements CollectionProvider {
     }
 
     @Override
-    public int size(Object entity, ColumnAttribute columnAttribute) {
-        return Array.getLength(columnAttribute.getValue(entity));
+    public int size(Object entity, AttributeInformation attributeInformation) {
+        return Array.getLength(attributeInformation.getValue(entity));
     }
 
     @Override
-    public List<List<Object>> getSqlValues(Object entity, ColumnAttribute columnAttribute) {
-        Object array = columnAttribute.getValue(entity);
+    public List<List<Object>> getSqlValues(Object entity, AttributeInformation attributeInformation) {
+        Object array = attributeInformation.getValue(entity);
 
         List<List<Object>> values = new ArrayList<>();
 
@@ -42,19 +42,19 @@ public class ArrayProvider implements CollectionProvider {
     }
 
     @Override
-    public SQLFunction<Object> getValueFromResultSet(ColumnAttribute columnAttribute, ColumnMapper mapper) {
+    public SQLFunction<Object> getValueFromResultSet(AttributeInformation attributeInformation, ColumnMapper mapper) {
         return resultSet -> {
             List<Object> list = new ArrayList<>();
 
             while (resultSet.next()) {
                 int index = resultSet.getInt("index");
                 Object value = mapper.getValue(resultSet, "value",
-                        Reflections.getElementTypeFromArray(columnAttribute.getField()));
+                        Reflections.getElementTypeFromArray(attributeInformation.getField()));
                 list.add(index, value);
             }
 
             // Create new array
-            Object array = Array.newInstance(Reflections.getElementTypeFromArray(columnAttribute.getField()),
+            Object array = Array.newInstance(Reflections.getElementTypeFromArray(attributeInformation.getField()),
                     list.size());
             for (int i = 0; i < list.size(); i++) {
                 Array.set(array, i, list.get(i));

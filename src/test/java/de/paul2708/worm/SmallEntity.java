@@ -1,16 +1,16 @@
 package de.paul2708.worm;
 
-import de.paul2708.worm.columns.Column;
-import de.paul2708.worm.columns.MaxLength;
-import de.paul2708.worm.columns.PrimaryKey;
-import de.paul2708.worm.columns.Table;
+import de.paul2708.worm.attributes.Attribute;
+import de.paul2708.worm.attributes.MaxLength;
+import de.paul2708.worm.attributes.Identifier;
+import de.paul2708.worm.attributes.Entity;
 
-@Table("small_entities")
+@Entity("small_entities")
 public class SmallEntity {
 
-    @PrimaryKey
+    @Identifier
     @MaxLength(16)
-    @Column("name")
+    @Attribute("name")
     private String name;
 
     public SmallEntity() {

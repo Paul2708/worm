@@ -1,9 +1,9 @@
 package de.paul2708.worm.database.sql.datatypes.impl;
 
-import de.paul2708.worm.columns.ColumnAttribute;
-import de.paul2708.worm.columns.CreatedAt;
-import de.paul2708.worm.columns.UpdatedAt;
-import de.paul2708.worm.columns.properties.TimeZoneProperty;
+import de.paul2708.worm.attributes.AttributeInformation;
+import de.paul2708.worm.attributes.CreatedAt;
+import de.paul2708.worm.attributes.UpdatedAt;
+import de.paul2708.worm.attributes.properties.TimeZoneProperty;
 import de.paul2708.worm.database.sql.datatypes.ColumnDataType;
 import de.paul2708.worm.util.DateTimeConverter;
 
@@ -21,7 +21,7 @@ public final class LocalDateTimeColumnDataType implements ColumnDataType<LocalDa
     }
 
     @Override
-    public LocalDateTime from(ResultSet resultSet, ColumnAttribute attribute, String column) throws SQLException {
+    public LocalDateTime from(ResultSet resultSet, AttributeInformation attribute, String column) throws SQLException {
         LocalDateTime localDateTime = resultSet.getTimestamp(column).toLocalDateTime();
         ZoneId targetZone = attribute.getProperty(TimeZoneProperty.class).toZone();
 
@@ -29,7 +29,7 @@ public final class LocalDateTimeColumnDataType implements ColumnDataType<LocalDa
     }
 
     @Override
-    public void to(PreparedStatement statement, int index, ColumnAttribute attribute, LocalDateTime value) throws SQLException {
+    public void to(PreparedStatement statement, int index, AttributeInformation attribute, LocalDateTime value) throws SQLException {
         ZoneId localZone = attribute.getProperty(TimeZoneProperty.class).toZone();
         LocalDateTime localDateTimeUTC = DateTimeConverter.convertToUTC(value, localZone);
 
@@ -37,7 +37,7 @@ public final class LocalDateTimeColumnDataType implements ColumnDataType<LocalDa
     }
 
     @Override
-    public String getSqlType(ColumnAttribute attribute) {
+    public String getSqlType(AttributeInformation attribute) {
         if (attribute == null) {
             return "DATETIME(6)";
         }
