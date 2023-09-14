@@ -1,6 +1,9 @@
 package de.paul2708.worm.database.functionality;
 
-import de.paul2708.worm.*;
+import de.paul2708.worm.data.Person;
+import de.paul2708.worm.data.PersonRepository;
+import de.paul2708.worm.data.SmallEntity;
+import de.paul2708.worm.data.SmallEntityRepository;
 import de.paul2708.worm.database.Database;
 import de.paul2708.worm.repository.Repository;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,13 +11,13 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public abstract class BasicRepositoryTest extends DatabaseTestBase {
+public abstract class BasicTest extends DatabaseTestBase {
 
     private PersonRepository repository;
+    private SmallEntityRepository smallEntityRepository;
 
     @BeforeEach
     void resetDatabase() {
@@ -22,7 +25,10 @@ public abstract class BasicRepositoryTest extends DatabaseTestBase {
         emptyDatabase.connect();
 
         this.repository = Repository.create(PersonRepository.class, Person.class, emptyDatabase);
+        this.smallEntityRepository = Repository.create(SmallEntityRepository.class, SmallEntity.class, emptyDatabase);
+
         assumeTrue(repository.findAll().isEmpty());
+        assumeTrue(smallEntityRepository.findAll().isEmpty());
     }
 
     @Test
@@ -108,5 +114,25 @@ public abstract class BasicRepositoryTest extends DatabaseTestBase {
         repository.delete(new Person("Max", 42));
 
         assertEquals(1, repository.findAll().size());
+    }
+
+    @Test
+    void testOnlyIdentifier() {
+        SmallEntity entity = new SmallEntity("Sam");
+        smallEntityRepository.save(entity);
+
+        Optional<SmallEntity> entityOpt = smallEntityRepository.findById("Sam");
+        assertTrue(entityOpt.isPresent());
+        assertEquals("Sam", entityOpt.get().getName());
+    }
+
+    @Test
+    void testNullableAttribute() {
+        Person person = new Person(null, 42);
+        int id = repository.save(person).getId();
+
+        Optional<Person> personOpt = repository.findById(id);
+        assertTrue(personOpt.isPresent());
+        assertNull(personOpt.get().getName());
     }
 }

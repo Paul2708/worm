@@ -2,8 +2,8 @@ package de.paul2708.worm.attributes;
 
 import de.paul2708.worm.attributes.validator.EntityValidator;
 import de.paul2708.worm.attributes.validator.InvalidEntityException;
-import de.paul2708.worm.Car;
-import de.paul2708.worm.Person;
+import de.paul2708.worm.data.Car;
+import de.paul2708.worm.data.Person;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
