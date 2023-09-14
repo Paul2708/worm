@@ -1,4 +1,4 @@
-package de.paul2708.worm;
+package de.paul2708.worm.data;
 
 import de.paul2708.worm.attributes.Attribute;
 import de.paul2708.worm.attributes.MaxLength;

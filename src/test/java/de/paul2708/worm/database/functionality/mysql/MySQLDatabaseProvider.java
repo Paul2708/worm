@@ -1,11 +1,16 @@
-package de.paul2708.worm.database;
+package de.paul2708.worm.database.functionality.mysql;
 
+import de.paul2708.worm.database.Database;
+import de.paul2708.worm.database.functionality.DatabaseProvider;
 import de.paul2708.worm.database.sql.MySQLDatabase;
 import org.junit.jupiter.api.Assertions;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
-public class MySQLDatabaseTest extends DatabaseTest {
+public class MySQLDatabaseProvider implements DatabaseProvider {
 
     private static final String HOST = "host.docker.internal";
     private static final int PORT = 3306;
@@ -15,7 +20,7 @@ public class MySQLDatabaseTest extends DatabaseTest {
 
     @Override
     public Database createEmptyDatabase() {
-        // Drop table
+        // Drop tables
         try {
             Connection connection = DriverManager.getConnection(
                     "jdbc:mysql://%s:%s/%s".formatted(HOST, PORT, DATABASE), USERNAME, PASSWORD);

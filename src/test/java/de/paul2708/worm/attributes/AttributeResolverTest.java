@@ -1,7 +1,7 @@
 package de.paul2708.worm.attributes;
 
-import de.paul2708.worm.Fleet;
-import de.paul2708.worm.Person;
+import de.paul2708.worm.data.Fleet;
+import de.paul2708.worm.data.Person;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
