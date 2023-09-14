@@ -30,4 +30,6 @@ public class MySQLDatabaseTest extends DatabaseTest {
         // Create database
         return new MySQLDatabase(HOST, PORT, DATABASE, USERNAME, PASSWORD);
     }
+
+    // TODO: Close connection
 }
