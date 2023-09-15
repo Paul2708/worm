@@ -122,8 +122,8 @@ public abstract class CollectionsTest extends DatabaseTestBase {
         entity.setArray(new long[]{-123456789});
         assertArrayEquals(new long[]{-123456789}, saveAndFind(entity).getArray());
 
-        entity.setArray(new long[1337]);
-        assertArrayEquals(new long[1337], saveAndFind(entity).getArray());
+        entity.setArray(new long[137]);
+        assertArrayEquals(new long[137], saveAndFind(entity).getArray());
     }
 
     @Test
@@ -145,5 +145,14 @@ public abstract class CollectionsTest extends DatabaseTestBase {
         assertTrue(entityOpt.isPresent());
 
         return entityOpt.get();
+    }
+
+    @Test
+    void testMaximalLength() {
+        assertThrows(IllegalStateException.class, () -> {
+            CollectionEntity entity = new CollectionEntity();
+            entity.setArray(new long[2048]);
+            collectionEntityRepository.save(entity);
+        });
     }
 }

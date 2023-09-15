@@ -44,13 +44,10 @@ public class DatabaseActionProcessor {
             // Check max length
             for (AttributeInformation attribute : resolver.getAttributes()) {
                 if (attribute.hasMaximumLength()) {
-                    if (attribute.getValue(targetEntity) == null) {
-                        continue;
-                    }
+                    boolean tooLong = attribute.getProperty(LengthRestrictedProperty.class).exceedsLength(attribute
+                            .getValue(targetEntity));
 
-                    String text = (String) attribute.getValue(targetEntity);
-
-                    if (text.length() > attribute.getProperty(LengthRestrictedProperty.class).length()) {
+                    if (tooLong) {
                         throw new IllegalStateException("The value of field %s is too long.".formatted(attribute.fieldName()));
                     }
                 }
