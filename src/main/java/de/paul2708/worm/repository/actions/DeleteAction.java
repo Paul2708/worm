@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class DeleteAction extends DatabaseAction {
 
-    private static Set<String> KEYWORDS = Set.of("delete");
+    private static final Set<String> KEYWORDS = Set.of("delete");
 
     public DeleteAction(MethodInformation methodInformation) {
         super(methodInformation);

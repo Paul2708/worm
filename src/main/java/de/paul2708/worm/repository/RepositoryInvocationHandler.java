@@ -10,25 +10,30 @@ import java.util.List;
 
 public class RepositoryInvocationHandler implements InvocationHandler {
 
-    private final Class<?> repositoryClass;
-    private final Class<?> entityClass;
     private final DatabaseActionProcessor processor;
 
-    public RepositoryInvocationHandler(Class<?> repositoryClass, Class<?> entityClass, Database database) {
-        this.repositoryClass = repositoryClass;
-        this.entityClass = entityClass;
-
+    public RepositoryInvocationHandler(Class<?> entityClass, Database database) {
         this.processor = new DatabaseActionProcessor(database, entityClass);
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method method, Object[] args) {
+        if (method.isDefault()) {
+            try {
+                return InvocationHandler.invokeDefault(proxy, method, args);
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         DatabaseAction saveAction = new SaveAction(new MethodInformation(method, args));
         DatabaseAction findAllAction = new FindAllAction(new MethodInformation(method, args));
         DatabaseAction findByIdAction = new FindByIdAction(new MethodInformation(method, args));
         DatabaseAction deleteAction = new DeleteAction(new MethodInformation(method, args));
+        DatabaseAction findByAttributesAction = new FindByAttributesAction(new MethodInformation(method, args));
 
-        List<DatabaseAction> actions = List.of(saveAction, findAllAction, findByIdAction, deleteAction);
+        List<DatabaseAction> actions = List.of(saveAction, findAllAction, findByIdAction, deleteAction,
+                findByAttributesAction);
 
         for (DatabaseAction action : actions) {
             if (action.matches(method, args)) {
