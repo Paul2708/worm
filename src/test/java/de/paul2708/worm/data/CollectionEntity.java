@@ -3,6 +3,7 @@ package de.paul2708.worm.data;
 import de.paul2708.worm.attributes.Attribute;
 import de.paul2708.worm.attributes.Identifier;
 import de.paul2708.worm.attributes.Entity;
+import de.paul2708.worm.attributes.MaxLength;
 import de.paul2708.worm.attributes.generator.IntegerGenerator;
 
 import java.util.HashMap;
@@ -18,6 +19,7 @@ public class CollectionEntity {
     @Attribute("mapping")
     private Map<String, Integer> map;
 
+    @MaxLength(1024)
     @Attribute("array")
     private long[] array;
 
